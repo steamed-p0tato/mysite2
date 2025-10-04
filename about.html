@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<title>About Ariyan Basu</title>
+<style>
+body {
+margin: 0;
+font-family: Arial, Helvetica, sans-serif;
+color: #f5f5f5;
+display: flex;
+height: 100vh;
+overflow: hidden;
+}
+
+/* Left panel */
+.left {
+width: 40%;
+background: #000;
+padding: 50px 30px;
+display: flex;
+flex-direction: column;
+justify-content: center;
+text-align: left;
+}
+
+.left h1 {
+font-size: 48px;
+font-weight: 900;
+margin: 0 0 20px;
+letter-spacing: 2px;
+}
+
+.left h2 {
+font-size: 18px;
+color: #bbb;
+margin: 25px 0 8px;
+border-bottom: 1px solid #333;
+padding-bottom: 4px;
+}
+
+.left p, .left ul {
+font-size: 14px;
+line-height: 1.5;
+margin: 0 0 15px;
+}
+
+.left ul {
+list-style-type: none;
+padding: 0;
+}
+.left ul li {
+margin: 4px 0;
+}
+
+.btn {
+background: #f5f5f5;
+color: #000;
+font-weight: bold;
+padding: 8px 14px;
+border: none;
+border-radius: 4px;
+cursor: pointer;
+text-decoration: none;
+display: inline-block;
+margin-top: 20px;
+font-size: 14px;
+}
+.btn:hover {
+background: #ccc;
+}
+
+/* Right panel */
+.right {
+width: 60%;
+background: #e8f5e8;
+position: relative;
+}
+canvas {
+position: absolute;
+top: 0; left: 0;
+width: 100%;
+height: 100%;
+display: block;
+cursor: crosshair;
+}
+</style>
+</head>
+<body>
+<div class="left">
+<a href="index.html">home</a>
+<h1>ARIYAN BASU</h1>
+<p>
+Computer Science major focused on Artificial Intelligence.
+Right now focusing on a startup but aspire to be a phd scholar
+</p>
+
+<h2>Skills</h2>
+<ul>
+<li>AI & ML — RAG, fine-tuning, embeddings</li>
+<li>CNN/tansformer hybrid architectures</li>
+<li>Languages — Python, C for fun</li>
+<li>ELT pipelines for custom training/RAG data</li>
+<li>Specialized software-tool creation</li>
+</ul>
+
+<h2>Hobbies</h2>
+<ul>
+<li>Linux tinkering</li>
+<li>3D printing </li>
+<li>Anime and playing games "i dont really get time anymore :("</li>
+<li>Reading philosophy books</li>
+<li><a href="https://www.lenovo.com/thinkpad" target="_blank" rel="noopener" style="color: inherit; text-decoration: underline;">ThinkPad</a> enthusiast</li>
+</ul>
+
+<h2>What I'm Doing Right Now</h2>
+<ul>
+<li><a href="https://demole.app/" target="_blank" rel="noopener noreferrer" style="color: inherit; text-decoration: underline;">Building a startup around AI for legal tech called Demole</a></li>
+<li>Doing research on early Glucoma detection with a novel CNN architecture</li>
+<li>pre-training domain specific AI for school students under my uni</li>
+<li>Learning more fundamental AI knowledge at architecture level</li>
+<li><a href="https://skywaave.com/" target="_blank" rel="noopener noreferrer" style="color: inherit; text-decoration: underline;">Building drones and other electronics at skywaave</a></li>
+</ul>
+
+</div>
+
+<div class="right">
+<canvas id="fibonacciCanvas"></canvas>
+</div>
+
+<script>
+const canvas = document.getElementById("fibonacciCanvas");
+const ctx = canvas.getContext("2d");
+
+function resizeCanvas() {
+canvas.width = canvas.clientWidth;
+canvas.height = canvas.clientHeight;
+}
+window.addEventListener("resize", resizeCanvas);
+resizeCanvas();
+
+let angle = 0;
+let n = 0;
+const particles = [];
+const maxParticles = 600;
+const mouse = { x: null, y: null, radius: 150 };
+
+// Mouse interaction
+canvas.addEventListener("mousemove", (e) => {
+const rect = canvas.getBoundingClientRect();
+mouse.x = e.clientX - rect.left;
+mouse.y = e.clientY - rect.top;
+});
+
+canvas.addEventListener("mouseleave", () => {
+mouse.x = null;
+mouse.y = null;
+});
+
+class Particle {
+constructor(x, y, index) {
+this.x = x;
+this.y = y;
+this.baseX = x;
+this.baseY = y;
+this.size = 3 + Math.random() * 3;
+this.baseSize = this.size;
+this.opacity = 0;
+this.age = 0;
+this.maxAge = 400;
+this.speed = 0.3 + Math.random() * 0.3;
+this.vx = 0;
+this.vy = 0;
+this.hue = 100 + Math.random() * 40;
+this.index = index;
+this.pulseOffset = Math.random() * Math.PI * 2;
+}
+
+update() {
+this.age++;
+
+// Fade in and out
+if (this.age < 30) {
+this.opacity = this.age / 30;
+} else if (this.age > this.maxAge - 60) {
+this.opacity = (this.maxAge - this.age) / 60;
+} else {
+this.opacity = 1;
+}
+
+// Gentle organic drift
+this.x += Math.sin(this.age * 0.02 + this.pulseOffset) * this.speed;
+this.y += Math.cos(this.age * 0.015 + this.pulseOffset) * this.speed * 0.7;
+
+// Pulsing size effect
+const pulse = Math.sin(this.age * 0.05 + this.pulseOffset) * 0.3;
+this.size = this.baseSize * (1 + pulse * 0.3);
+
+// Mouse interaction - repel particles
+if (mouse.x != null && mouse.y != null) {
+const dx = this.x - mouse.x;
+const dy = this.y - mouse.y;
+const distance = Math.sqrt(dx * dx + dy * dy);
+
+if (distance < mouse.radius) {
+const force = (mouse.radius - distance) / mouse.radius;
+const angle = Math.atan2(dy, dx);
+this.vx += Math.cos(angle) * force * 2;
+this.vy += Math.sin(angle) * force * 2;
+}
+}
+
+// Apply velocity with damping
+this.x += this.vx;
+this.y += this.vy;
+this.vx *= 0.9;
+this.vy *= 0.9;
+
+// Gentle return to base position
+const returnForce = 0.02;
+this.x += (this.baseX - this.x) * returnForce;
+this.y += (this.baseY - this.y) * returnForce;
+}
+
+draw() {
+if (this.opacity <= 0) return;
+
+// Dynamic color based on age and position
+const hueShift = Math.sin(this.age * 0.03) * 15;
+const saturation = 45 + Math.sin(this.age * 0.04) * 10;
+const lightness = 45 + Math.sin(this.age * 0.05) * 8;
+
+// Main particle
+ctx.beginPath();
+ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+
+const gradient = ctx.createRadialGradient(
+this.x, this.y, 0,
+this.x, this.y, this.size * 2
+);
+gradient.addColorStop(0, `hsla(${this.hue + hueShift}, ${saturation + 20}%, ${lightness + 15}%, ${this.opacity})`);
+gradient.addColorStop(0.5, `hsla(${this.hue + hueShift}, ${saturation}%, ${lightness}%, ${this.opacity * 0.7})`);
+gradient.addColorStop(1, `hsla(${this.hue + hueShift}, ${saturation - 10}%, ${lightness - 10}%, 0)`);
+
+ctx.fillStyle = gradient;
+ctx.fill();
+
+// Glow effect
+ctx.shadowBlur = 15 + Math.sin(this.age * 0.1) * 5;
+ctx.shadowColor = `hsla(${this.hue + hueShift}, ${saturation}%, ${lightness}%, ${this.opacity * 0.6})`;
+ctx.fill();
+ctx.shadowBlur = 0;
+}
+
+isDead() {
+return this.age >= this.maxAge;
+}
+}
+
+function drawConnections() {
+ctx.lineWidth = 1;
+const maxDistance = 80;
+
+for (let i = 0; i < particles.length; i++) {
+for (let j = i + 1; j < Math.min(i + 10, particles.length); j++) {
+const dx = particles[i].x - particles[j].x;
+const dy = particles[i].y - particles[j].y;
+const distance = Math.sqrt(dx * dx + dy * dy);
+
+if (distance < maxDistance) {
+const opacity = (1 - distance / maxDistance) * 
+Math.min(particles[i].opacity, particles[j].opacity) * 0.3;
+
+ctx.strokeStyle = `rgba(80, 150, 80, ${opacity})`;
+ctx.beginPath();
+ctx.moveTo(particles[i].x, particles[i].y);
+ctx.lineTo(particles[j].x, particles[j].y);
+ctx.stroke();
+}
+}
+}
+}
+
+function animate() {
+// Create trailing effect instead of full clear
+ctx.fillStyle = "rgba(232, 245, 232, 0.15)";
+ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+const scale = 4.5;
+const centerX = canvas.width / 2;
+const centerY = canvas.height / 2;
+
+// Spawn new particles
+if (particles.length < maxParticles && n < 1500) {
+const r = scale * Math.sqrt(n);
+const a = n * 137.5077640500378 * Math.PI / 180;
+const posX = centerX + r * Math.cos(a + angle);
+const posY = centerY + r * Math.sin(a + angle);
+particles.push(new Particle(posX, posY, n));
+n++;
+}
+
+// Update and draw particles
+for (let i = particles.length - 1; i >= 0; i--) {
+particles[i].update();
+particles[i].draw();
+
+if (particles[i].isDead()) {
+particles.splice(i, 1);
+}
+}
+
+// Draw connections
+drawConnections();
+
+// Rotate the spiral slowly
+angle += 0.002;
+
+requestAnimationFrame(animate);
+}
+
+animate();
+</script>
+</body>
+</html>

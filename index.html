@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+<head><meta http-equiv="Content-Type" content="text/html; charset=windows-1252">
+<title>Ariyan Basu</title>
+<link rel="shortcut icon" href="/favicon.ico" type="image/x-icon">
+<link rel="icon" href="/favicon.ico" type="image/x-icon">
+<style>
+body {top: 0; left: 0; width: 99%; height: 97%;
+    position: absolute; display: table}
+  p {display: table-cell; vertical-align: middle; text-align: center}
+#timezone * {text-decoration: none;}
+
+}
+</style>
+
+<script type="text/javascript">
+    // declare time zone formatting
+    let options = {
+        timeZone: 'Asia/Kolkata',
+        hour: 'numeric',
+        minute: 'numeric',
+        second: 'numeric',
+    },
+    formatter = new Intl.DateTimeFormat([], options);
+
+    // set time
+    setInterval(
+        () => {
+            document.querySelector("#time").innerText = formatter.format(new Date());
+        }
+    , 1000)
+</script>
+</head>
+
+
+
+
+
+<p>
+<font size="7"><i><b>Ariyan Basu</b></i></font> <br>
+<br>
+<img src="3.jpg" style="width:560px;"><br>
+<br>
+<span id=timezone>
+<i>
+    TIME IN CALCUTTA - <span id="time">0:00 PM</span> IST
+</i>
+
+</span>
+<br><br>
+
+<a href="about.html">about</a> //
+<a href="blog.html">blog</a> //
+<a href="https://github.com/steamed-p0tato">github</a> //
+<a href="https://huggingface.co/steamed-potatop">huggingface</a> //
+<a href="contact.html">contact</a>
+
+<br>
+<br>
+</body>
+</html>

@@ -1,61 +1,223 @@
 <!DOCTYPE html>
-<html>
-<head><meta http-equiv="Content-Type" content="text/html; charset=windows-1252">
-<title>Ariyan Basu</title>
-<link rel="shortcut icon" href="/favicon.ico" type="image/x-icon">
-<link rel="icon" href="/favicon.ico" type="image/x-icon">
-<style>
-body {top: 0; left: 0; width: 99%; height: 97%;
-    position: absolute; display: table}
-  p {display: table-cell; vertical-align: middle; text-align: center}
-#timezone * {text-decoration: none;}
-
-}
-</style>
-
-<script type="text/javascript">
-    // declare time zone formatting
-    let options = {
-        timeZone: 'Asia/Kolkata',
-        hour: 'numeric',
-        minute: 'numeric',
-        second: 'numeric',
-    },
-    formatter = new Intl.DateTimeFormat([], options);
-
-    // set time
-    setInterval(
-        () => {
-            document.querySelector("#time").innerText = formatter.format(new Date());
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ariyan Basu</title>
+    <style>
+        /* --- 1. Basic Setup & Fonts --- */
+        body {
+            background-color: #f0efeb;
+            color: #5d5d5d;
+            font-family: 'Times New Roman', Times, serif;
+            margin: 0;
+            padding: 2rem;
         }
-    , 1000)
-</script>
+
+        /* --- 2. Main Layout (CSS Grid) --- */
+        .container {
+            display: grid;
+            grid-template-columns: 1.5fr 2fr;
+            grid-template-rows: auto 1fr;
+            gap: 25px;
+            max-width: 1400px;
+            margin: auto;
+            border-top: 1px solid #dcdcdc;
+        }
+
+        /* --- 3. Grid Item Placement --- */
+        .header {
+            grid-column: 1 / -1;
+            grid-row: 1 / 2;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            padding: 20px 0;
+            border-bottom: 1px solid #dcdcdc;
+        }
+
+        .left-col {
+            grid-column: 1 / 2;
+            grid-row: 2 / 3;
+            border-right: 1px solid #dcdcdc;
+            padding-right: 25px;
+        }
+
+        .center-col {
+            grid-column: 2 / 3;
+            grid-row: 2 / 3;
+        }
+        
+        /* --- 4. Header & Navigation --- */
+        .logo {
+            text-align: center;
+        }
+
+        .logo h1 {
+            font-size: 3.5rem;
+            margin: 0;
+            line-height: 1;
+            font-weight: normal;
+        }
+
+        .nav {
+            padding-top: 10px;
+        }
+
+        .nav a {
+            text-decoration: none;
+            color: #5d5d5d;
+            margin-left: 20px;
+            padding: 5px 10px;
+            font-size: 1rem;
+            transition: border 0.3s ease;
+        }
+
+        .nav a.active {
+            border: 1px solid #888;
+        }
+
+        .nav a:hover {
+            border: 1px solid #bbb;
+        }
+        
+        /* --- 5. Content Styling --- */
+        .subtitle {
+            font-family: sans-serif;
+            font-style: italic;
+            font-size: 0.8rem;
+            border-bottom: 1px dotted #888;
+            display: inline-block;
+            margin: 0;
+            padding-bottom: 2px;
+        }
+
+        .left-col h2 {
+            font-size: 0.9rem;
+            letter-spacing: 2px;
+            color: #888;
+            font-weight: normal;
+        }
+
+        #timezone {
+            font-family: sans-serif;
+            font-style: italic;
+            font-size: 1rem;
+            color: #333;
+            margin-left: 10px;
+        }
+        
+        #timezone i {
+            font-size: 1rem;
+            font-weight: 500;
+            font-style: italic;
+        }
+
+        img {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+
+        .main-image {
+            height: 100%;
+            max-height: 80vh;
+            object-fit: cover;
+        }
+
+        /* --- 6. Responsive Design --- */
+        @media (max-width: 768px) {
+            .container {
+                grid-template-columns: 1fr;
+                grid-template-rows: auto auto auto;
+            }
+
+            .header {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .nav {
+                margin-top: 15px;
+            }
+
+            .nav a {
+                margin: 0 10px;
+            }
+
+            .left-col {
+                border-right: none;
+                border-bottom: 1px solid #dcdcdc;
+                padding-right: 0;
+                padding-bottom: 25px;
+            }
+
+            .center-col {
+                grid-column: 1 / 2;
+            }
+
+            .logo h1 {
+                font-size: 2.5rem;
+            }
+        }
+    </style>
 </head>
+<body>
 
+    <div class="container">
 
+        <header class="header">
+            <div class="logo">
+                <h1>Ariyan Basu</h1>
+            </div>
+            <nav class="nav">
+                <a href="about.html" class="active">about</a>
+                <a href="blog.html">blog</a>
+                <a href="https://github.com/steamed-p0tato" target="_blank" rel="noopener noreferrer">github</a>
+                <a href="https://huggingface.co/steamed-potatop" target="_blank" rel="noopener noreferrer">huggingface</a>
+                <a href="contact.html">contact</a>
+            </nav>
+        </header>
 
+        <aside class="left-col">
+            <h2>LOCAL TIME</h2>
+            <span id="timezone">
+                <i>TIME IN CALCUTTA - <span id="time">Loading...</span> IST</i>
+            </span>
+        </aside>
 
+        <main class="center-col">
+            <img src="3.jpg" alt="Ariyan Basu" class="main-image">
+        </main>
 
-<p>
-<font size="7"><i><b>Ariyan Basu</b></i></font> <br>
-<br>
-<img src="3.jpg" style="width:560px;"><br>
-<br>
-<span id=timezone>
-<i>
-    TIME IN CALCUTTA - <span id="time">0:00 PM</span> IST
-</i>
+    </div>
 
-</span>
-<br><br>
+    <script type="text/javascript">
+        // Declare time zone formatting for India
+        const options = {
+            timeZone: 'Asia/Kolkata',
+            hour: 'numeric',
+            minute: 'numeric',
+            second: 'numeric',
+            hour12: true
+        };
+        
+        const formatter = new Intl.DateTimeFormat('en-IN', options);
 
-<a href="about.html">about</a> //
-<a href="blog.html">blog</a> //
-<a href="https://github.com/steamed-p0tato">github</a> //
-<a href="https://huggingface.co/steamed-potatop">huggingface</a> //
-<a href="contact.html">contact</a>
+        // Update time function
+        function updateTime() {
+            const timeElement = document.querySelector("#time");
+            if (timeElement) {
+                timeElement.innerText = formatter.format(new Date());
+            }
+        }
 
-<br>
-<br>
+        // Initial call
+        updateTime();
+        
+        // Set interval to update every second
+        setInterval(updateTime, 1000);
+    </script>
+
 </body>
 </html>

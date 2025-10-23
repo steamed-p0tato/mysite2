@@ -1,0 +1,1126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Building an Intelligent Q&A Dataset Generator - Ariyan Basu</title>
+    <style>
+        /* --- 1. Basic Setup & Fonts --- */
+        body {
+            background-color: #f0efeb;
+            color: #5d5d5d;
+            font-family: 'Times New Roman', Times, serif;
+            margin: 0;
+            padding: 2rem;
+        }
+
+        /* --- 2. Main Layout (CSS Grid) --- */
+        .container {
+            display: grid;
+            grid-template-columns: 1fr;
+            grid-template-rows: auto 1fr;
+            gap: 25px;
+            max-width: 900px;
+            margin: auto;
+            border-top: 1px solid #dcdcdc;
+        }
+
+        /* --- 3. Grid Item Placement --- */
+        .header {
+            grid-column: 1 / -1;
+            grid-row: 1 / 2;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            padding: 20px 0;
+            border-bottom: 1px solid #dcdcdc;
+        }
+
+        .main-col {
+            grid-column: 1 / 2;
+            grid-row: 2 / 3;
+            padding-bottom: 3rem;
+        }
+        
+        /* --- 4. Header & Navigation --- */
+        .logo {
+            text-align: center;
+        }
+
+        .logo h1 {
+            font-size: 3.5rem;
+            margin: 0;
+            line-height: 1;
+            font-weight: normal;
+        }
+
+        .nav {
+            padding-top: 10px;
+        }
+
+        .nav a {
+            text-decoration: none;
+            color: #5d5d5d;
+            margin-left: 20px;
+            padding: 5px 10px;
+            font-size: 1rem;
+            transition: border 0.3s ease;
+        }
+
+        .nav a.active {
+            border: 1px solid #888;
+        }
+
+        .nav a:hover {
+            border: 1px solid #bbb;
+        }
+        
+        /* --- 5. Content Styling --- */
+        .subtitle {
+            font-family: sans-serif;
+            font-style: italic;
+            font-size: 0.8rem;
+            border-bottom: 1px dotted #888;
+            display: inline-block;
+            margin: 0;
+            padding-bottom: 2px;
+        }
+
+        /* --- 6. Blog Post Styling --- */
+        .post-header {
+            margin-bottom: 3rem;
+            padding-bottom: 2rem;
+            border-bottom: 2px solid #dcdcdc;
+        }
+
+        .post-date {
+            font-family: sans-serif;
+            font-size: 0.85rem;
+            color: #888;
+            letter-spacing: 1px;
+            margin-bottom: 1rem;
+        }
+
+        .post-title {
+            font-size: 2.5rem;
+            margin: 0.5rem 0 1rem 0;
+            font-weight: normal;
+            line-height: 1.3;
+            color: #5d5d5d;
+        }
+
+        .post-meta {
+            font-family: sans-serif;
+            font-size: 0.85rem;
+            color: #888;
+            font-style: italic;
+        }
+
+        .post-content h2 {
+            font-size: 1.8rem;
+            font-weight: normal;
+            margin: 2.5rem 0 1rem 0;
+            color: #5d5d5d;
+            border-bottom: 1px solid #dcdcdc;
+            padding-bottom: 0.5rem;
+        }
+
+        .post-content h3 {
+            font-size: 1.4rem;
+            font-weight: normal;
+            margin: 2rem 0 1rem 0;
+            color: #5d5d5d;
+        }
+
+        .post-content h4 {
+            font-size: 1.1rem;
+            font-weight: bold;
+            margin: 1.5rem 0 0.8rem 0;
+            color: #5d5d5d;
+        }
+
+        .post-content p {
+            font-size: 1.1rem;
+            line-height: 1.8;
+            margin: 1rem 0;
+        }
+
+        .post-content ul,
+        .post-content ol {
+            font-size: 1.05rem;
+            line-height: 1.8;
+            margin: 1rem 0;
+            padding-left: 2rem;
+        }
+
+        .post-content li {
+            margin: 0.5rem 0;
+        }
+
+        .post-content a {
+            color: #5d5d5d;
+            text-decoration: underline;
+            transition: color 0.3s ease;
+        }
+
+        .post-content a:hover {
+            color: #888;
+        }
+
+        .post-content code {
+            background-color: #e8e8e8;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 0.95em;
+            color: #333;
+        }
+
+        .post-content pre {
+            background-color: #2d2d2d;
+            color: #f8f8f8;
+            padding: 1.5rem;
+            border-radius: 5px;
+            overflow-x: auto;
+            margin: 1.5rem 0;
+            border-left: 4px solid #888;
+        }
+
+        .post-content pre code {
+            background-color: transparent;
+            padding: 0;
+            color: #f8f8f8;
+            font-size: 0.95rem;
+            line-height: 1.6;
+        }
+
+        .post-content blockquote {
+            border-left: 4px solid #dcdcdc;
+            padding-left: 1.5rem;
+            margin: 1.5rem 0;
+            color: #888;
+            font-style: italic;
+        }
+
+        .back-link {
+            display: inline-block;
+            text-decoration: none;
+            color: #5d5d5d;
+            border: 1px solid #888;
+            padding: 8px 20px;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+            font-family: sans-serif;
+            margin-top: 3rem;
+        }
+
+        .back-link:hover {
+            background-color: #5d5d5d;
+            color: #f0efeb;
+        }
+
+        .code-header {
+            font-family: sans-serif;
+            font-size: 0.85rem;
+            color: #888;
+            margin-bottom: 0.5rem;
+            font-weight: bold;
+        }
+
+        .highlight {
+            background-color: #fff9e6;
+            padding: 0.2rem 0.4rem;
+            border-radius: 3px;
+        }
+
+        /* --- 7. Responsive Design --- */
+        @media (max-width: 768px) {
+            .header {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .nav {
+                margin-top: 15px;
+            }
+
+            .nav a {
+                margin: 0 10px;
+            }
+
+            .logo h1 {
+                font-size: 2.5rem;
+            }
+
+            .post-title {
+                font-size: 2rem;
+            }
+
+            .post-content h2 {
+                font-size: 1.5rem;
+            }
+
+            .post-content h3 {
+                font-size: 1.2rem;
+            }
+
+            .post-content p,
+            .post-content ul,
+            .post-content ol {
+                font-size: 1rem;
+            }
+
+            .post-content pre {
+                padding: 1rem;
+                font-size: 0.85rem;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+
+        <header class="header">
+            <div class="logo">
+                <h1>Ariyan Basu</h1>
+                <p class="subtitle">...Portfolio & Blog...</p>
+            </div>
+            <nav class="nav">
+                <a href="about.html">about</a>
+                <a href="blog.html" class="active">blog</a>
+                <a href="https://github.com/steamed-p0tato" target="_blank" rel="noopener noreferrer">github</a>
+                <a href="https://huggingface.co/steamed-potatop" target="_blank" rel="noopener noreferrer">huggingface</a>
+                <a href="contact.html">contact</a>
+            </nav>
+        </header>
+
+        <main class="main-col">
+            
+            <article class="post-header">
+                <div class="post-date">JANUARY 15, 2025</div>
+                <h1 class="post-title">Building an Intelligent Q&A Dataset Generator with FAISS, Ollama, and LangChain: A Complete Guide</h1>
+                <div class="post-meta">Machine Learning • AI • RAG Systems • Tutorial</div>
+            </article>
+
+            <div class="post-content">
+                
+                <h2>Introduction: The Challenge of Creating High-Quality Training Data</h2>
+                
+                <p>In the rapidly evolving landscape of artificial intelligence and natural language processing, one of the most persistent challenges is obtaining high-quality training data. Whether you're fine-tuning a language model, building a RAG (Retrieval-Augmented Generation) system, or creating a domain-specific chatbot, you need question-answer pairs that are contextually rich, semantically coherent, and representative of your knowledge base.</p>
+
+                <p>Traditional approaches to generating Q&A datasets often fall short:</p>
+
+                <ul>
+                    <li>Manual creation is time-consuming, expensive, and doesn't scale</li>
+                    <li>Simple extraction methods miss contextual relationships between different parts of documents</li>
+                    <li>Random chunk-based generation creates isolated Q&A pairs that lack broader context</li>
+                    <li>Cloud-based solutions raise privacy concerns and incur ongoing costs</li>
+                </ul>
+
+                <p>This is where our Q&A Dataset Generator comes in—a sophisticated, privacy-first tool that leverages local language models, semantic embeddings, and vector databases to create contextually-aware question-answer pairs from your PDF documents.</p>
+
+                <h2>What Makes This Tool Different?</h2>
+
+                <p>The key innovation of this tool lies in its use of <span class="highlight">semantic similarity</span> to provide contextual awareness during Q&A generation. Here's what sets it apart:</p>
+
+                <h3>1. Context-Aware Generation</h3>
+
+                <p>Unlike traditional approaches that process each text chunk in isolation, our tool:</p>
+
+                <ul>
+                    <li>Generates embeddings for all text chunks</li>
+                    <li>Builds a FAISS vector index for lightning-fast similarity search</li>
+                    <li>Finds semantically related chunks for each piece of text</li>
+                    <li>Uses these related chunks as context when generating Q&A pairs</li>
+                </ul>
+
+                <p>The result? Answers that are more comprehensive, accurate, and contextually grounded.</p>
+
+                <h3>2. Privacy-First Architecture</h3>
+
+                <p>Everything runs locally:</p>
+
+                <ul>
+                    <li>Uses Ollama for local LLM inference</li>
+                    <li>No data leaves your machine</li>
+                    <li>Perfect for sensitive documents (medical records, legal documents, proprietary research)</li>
+                    <li>No API costs or rate limits</li>
+                </ul>
+
+                <h3>3. Persistent Vector Indexes</h3>
+
+                <p>The tool creates and saves FAISS indexes for each PDF, enabling:</p>
+
+                <ul>
+                    <li>Fast semantic search across your Q&A dataset</li>
+                    <li>Reusability without regenerating embeddings</li>
+                    <li>Efficient similarity-based retrieval</li>
+                    <li>Foundation for building RAG systems</li>
+                </ul>
+
+                <h3>4. User-Friendly Interface</h3>
+
+                <p>Built with Streamlit, the tool offers:</p>
+
+                <ul>
+                    <li>Intuitive folder management</li>
+                    <li>Real-time progress tracking</li>
+                    <li>Interactive search capabilities</li>
+                    <li>Dataset management features</li>
+                </ul>
+
+                <h2>Technical Architecture: Under the Hood</h2>
+
+                <p>Let's dive deep into the technical components that power this tool.</p>
+
+                <h3>Core Technologies</h3>
+
+                <h4>1. Ollama: Local LLM Infrastructure</h4>
+
+                <p>Ollama provides the foundation for running large language models locally. In our tool, we use it for two distinct purposes:</p>
+
+                <p><strong>Language Generation (e.g., Gemma 3:4b)</strong></p>
+
+                <pre><code>llm = Ollama(model=ollama_model)</code></pre>
+
+                <p>This model generates the actual questions and answers. Smaller models like Gemma 3:4b offer an excellent balance between quality and speed.</p>
+
+                <p><strong>Embeddings Generation (e.g., Qwen3-Embedding)</strong></p>
+
+                <pre><code>embeddings_model = OllamaEmbeddings(model=embedding_model)</code></pre>
+
+                <p>Specialized embedding models convert text into high-dimensional vectors that capture semantic meaning. The 0.6b embedding model is lightweight yet effective for similarity search.</p>
+
+                <h4>2. FAISS: Facebook AI Similarity Search</h4>
+
+                <p>FAISS is Meta's library for efficient similarity search and clustering of dense vectors. Here's why it's perfect for our use case:</p>
+
+                <ul>
+                    <li><strong>Speed:</strong> Searches millions of vectors in milliseconds</li>
+                    <li><strong>Efficiency:</strong> Optimized for both CPU and GPU</li>
+                    <li><strong>Scalability:</strong> Handles large-scale vector databases</li>
+                    <li><strong>Flexibility:</strong> Supports various distance metrics (L2, inner product, cosine)</li>
+                </ul>
+
+                <p>Our implementation uses IndexFlatL2 for exact L2 distance search:</p>
+
+                <pre><code>dimension = embeddings_array.shape[1]
+index = faiss.IndexFlatL2(dimension)
+index.add(embeddings_array)</code></pre>
+
+                <p><strong>Why L2 Distance?</strong><br>
+                L2 (Euclidean) distance measures the straight-line distance between vectors in high-dimensional space. While cosine similarity is also popular, L2 distance works well for normalized embeddings and provides intuitive distance metrics.</p>
+
+                <h4>3. LangChain: Orchestration Framework</h4>
+
+                <p>LangChain provides the glue that connects different components:</p>
+
+                <p><strong>Text Splitting</strong></p>
+
+                <pre><code>text_splitter = RecursiveCharacterTextSplitter(
+    chunk_size=1000, 
+    chunk_overlap=200
+)</code></pre>
+
+                <p>The recursive splitter intelligently breaks text at natural boundaries (paragraphs, sentences) while maintaining context through overlap.</p>
+
+                <p><strong>Prompt Templates</strong></p>
+
+                <pre><code>prompt = PromptTemplate.from_template(qa_prompt_template)
+chain = prompt | llm | StrOutputParser()</code></pre>
+
+                <p>LangChain's expression language (LCEL) creates clean, composable pipelines.</p>
+
+                <h4>4. PyMuPDF (fitz): PDF Processing</h4>
+
+                <p>For reliable, fast PDF text extraction:</p>
+
+                <pre><code>doc = fitz.open(file_path)
+text = "".join(page.get_text() for page in doc)</code></pre>
+
+                <p>PyMuPDF handles complex PDF layouts, embedded fonts, and multi-column documents better than many alternatives.</p>
+
+                <h2>The Complete Workflow: From PDF to Searchable Q&A</h2>
+
+                <p>Let's walk through the entire process step by step.</p>
+
+                <h3>Phase 1: Document Processing</h3>
+
+                <h4>Step 1: PDF Text Extraction</h4>
+
+                <pre><code>def extract_and_chunk_pdf(file_path, chunk_size=1000, chunk_overlap=200):
+    doc = fitz.open(file_path)
+    text = "".join(page.get_text() for page in doc)
+    doc.close()</code></pre>
+
+                <p>The tool opens each PDF and extracts raw text. The page-by-page extraction preserves document structure while building a complete text corpus.</p>
+
+                <h4>Step 2: Intelligent Chunking</h4>
+
+                <pre><code>text_splitter = RecursiveCharacterTextSplitter(
+    chunk_size=1000, 
+    chunk_overlap=200
+)
+splits = text_splitter.create_documents([text], metadatas=[metadata])</code></pre>
+
+                <p><strong>Why 1000 characters with 200 overlap?</strong></p>
+
+                <ul>
+                    <li>1000 characters (~150-200 words) provides enough context for meaningful questions</li>
+                    <li>200 character overlap ensures concepts spanning chunk boundaries aren't lost</li>
+                    <li>Maintains semantic coherence across splits</li>
+                </ul>
+
+                <h3>Phase 2: Embedding Generation</h3>
+
+                <h4>Step 3: Converting Text to Vectors</h4>
+
+                <p>This is where the magic begins. For each chunk:</p>
+
+                <pre><code>embedding = embeddings_model.embed_query(chunk.page_content)
+chunk_embeddings.append(embedding)</code></pre>
+
+                <p>Each chunk becomes a dense vector (typically 384-1024 dimensions depending on the model). These vectors capture semantic meaning—similar concepts cluster together in vector space.</p>
+
+                <p><strong>Example:</strong></p>
+
+                <ul>
+                    <li>Chunk about "machine learning algorithms" → Vector A</li>
+                    <li>Chunk about "neural network training" → Vector B (close to A)</li>
+                    <li>Chunk about "office furniture" → Vector C (far from A and B)</li>
+                </ul>
+
+                <h3>Phase 3: FAISS Index Construction</h3>
+
+                <h4>Step 4: Building the Similarity Search Index</h4>
+
+                <pre><code>embeddings_array = np.array(chunk_embeddings).astype('float32')
+index = faiss.IndexFlatL2(dimension)
+index.add(embeddings_array)</code></pre>
+
+                <p>The FAISS index enables ultra-fast similarity search. Instead of comparing every vector pair (O(n²) complexity), FAISS optimizes the search.</p>
+
+                <h4>Step 5: Finding Related Context</h4>
+
+                <p>For each chunk, we find semantically similar chunks:</p>
+
+                <pre><code>def find_similar_chunks(query_idx, faiss_index, chunks, k=5):
+    query_vector = faiss_index.reconstruct(query_idx)
+    distances, indices = faiss_index.search(query_vector, k + 1)
+    
+    similar_chunks = []
+    for idx in indices[0]:
+        if idx != query_idx:
+            similar_chunks.append(chunks[idx].page_content)
+    return similar_chunks[:k]</code></pre>
+
+                <p>This returns the top-k most similar chunks (excluding the query chunk itself).</p>
+
+                <h3>Phase 4: Context-Aware Q&A Generation</h3>
+
+                <h4>Step 6: Generating Questions and Answers</h4>
+
+                <p>This is where the contextual awareness shines:</p>
+
+                <pre><code>def generate_qa_from_chunk_with_context(main_chunk, related_chunks, llm):
+    context = f"MAIN TEXT:\n{main_chunk}\n\n"
+    
+    if related_chunks:
+        context += "RELATED CONTEXT (semantically similar sections):\n"
+        for i, chunk in enumerate(related_chunks, 1):
+            context += f"{i}. {chunk}\n\n"</code></pre>
+
+                <p><strong>The Prompt Strategy:</strong></p>
+
+                <p>The tool uses a carefully crafted prompt that:</p>
+
+                <ul>
+                    <li>Distinguishes between MAIN TEXT (focus) and RELATED CONTEXT (supporting)</li>
+                    <li>Instructs the LLM to generate questions primarily from main text</li>
+                    <li>Encourages comprehensive answers leveraging all context</li>
+                    <li>Enforces consistent output formatting</li>
+                </ul>
+
+                <p><strong>Example Scenario:</strong></p>
+
+                <p><em>Main Chunk:</em></p>
+                <blockquote>"FAISS uses Product Quantization for compression, reducing memory usage by 97%."</blockquote>
+
+                <p><em>Related Chunks (found via similarity):</em></p>
+                <ul>
+                    <li>"Vector databases enable similarity search at scale..."</li>
+                    <li>"Embedding models convert text to high-dimensional vectors..."</li>
+                    <li>"Product Quantization divides vectors into subspaces..."</li>
+                </ul>
+
+                <p><em>Generated Q&A:</em></p>
+                <ul>
+                    <li><strong>Q:</strong> "How does FAISS achieve such significant memory reduction?"</li>
+                    <li><strong>A:</strong> "FAISS achieves 97% memory reduction through Product Quantization, a technique that divides high-dimensional vectors into subspaces. This allows vector databases to perform similarity search at scale while maintaining efficiency in both storage and computation."</li>
+                </ul>
+
+                <p>Notice how the answer synthesizes information from multiple chunks, creating a richer response than using the main chunk alone would provide.</p>
+
+                <h3>Phase 5: Persistent Storage</h3>
+
+                <h4>Step 7: Saving FAISS Indexes</h4>
+
+                <pre><code>def save_pdf_faiss_index(pdf_filename, embeddings_list, qa_indices):
+    faiss_path = f"embeddings/{base_name}.faiss"
+    faiss.write_index(index, faiss_path)
+    
+    metadata = {
+        'qa_indices': qa_indices,
+        'dimension': dimension,
+        'total_vectors': len(embeddings_list)
+    }
+    with open(metadata_path, 'wb') as f:
+        pickle.dump(metadata, f)</code></pre>
+
+                <p>Each PDF gets its own FAISS index and metadata file, enabling:</p>
+
+                <ul>
+                    <li>Targeted semantic search within specific documents</li>
+                    <li>Efficient storage (vectors compressed in binary format)</li>
+                    <li>Easy management and deletion</li>
+                </ul>
+
+                <h4>Step 8: CSV Dataset Export</h4>
+
+                <pre><code>df = pd.DataFrame(all_qa_data)
+df.to_csv(OUTPUT_CSV, index=False)</code></pre>
+
+                <p>The resulting dataset includes:</p>
+
+                <ul>
+                    <li><code>file</code>: Source PDF filename</li>
+                    <li><code>question</code>: Generated question</li>
+                    <li><code>answer</code>: Comprehensive answer</li>
+                    <li><code>context_chunks_used</code>: Number of related chunks used</li>
+                </ul>
+
+                <h2>Key Features in Detail</h2>
+
+                <h3>1. Flexible Folder Management</h3>
+
+                <p>The tool offers multiple ways to organize your PDFs:</p>
+
+                <ul>
+                    <li>Browse existing folders in your current directory</li>
+                    <li>Create new folders on-the-fly</li>
+                    <li>Enter custom paths (relative or absolute)</li>
+                    <li>Automatic validation ensures folders exist before processing</li>
+                </ul>
+
+                <p>This flexibility accommodates different organizational structures and workflows.</p>
+
+                <h3>2. Real-Time Progress Tracking</h3>
+
+                <p>During processing, you see:</p>
+
+                <ul>
+                    <li>Overall progress across all PDFs</li>
+                    <li>Per-PDF status updates</li>
+                    <li>Chunk processing progress</li>
+                    <li>Embedding generation progress</li>
+                    <li>Q&A generation status</li>
+                </ul>
+
+                <p>This transparency helps you estimate completion time and identify bottlenecks.</p>
+
+                <h3>3. Dual Search Capabilities</h3>
+
+                <p><strong>Traditional Text Search:</strong></p>
+
+                <pre><code>mask = df['question'].str.contains(search_term, case=False, na=False) | \
+       df['answer'].str.contains(search_term, case=False, na=False)</code></pre>
+
+                <p>Simple keyword matching for quick lookups.</p>
+
+                <p><strong>Semantic Search with FAISS:</strong></p>
+
+                <pre><code>query_embedding = embeddings_model.embed_query(semantic_query)
+results = search_faiss_index(index, metadata, query_embedding, top_k=10)</code></pre>
+
+                <p>Find conceptually similar Q&A pairs even if they don't share exact keywords.</p>
+
+                <p><strong>Example:</strong></p>
+
+                <ul>
+                    <li>Search query: "How do neural networks learn?"</li>
+                    <li>Semantic matches might include Q&A about:
+                        <ul>
+                            <li>Backpropagation algorithms</li>
+                            <li>Gradient descent optimization</li>
+                            <li>Weight adjustment mechanisms</li>
+                        </ul>
+                    </li>
+                </ul>
+
+                <p>None of these contain "neural networks learn" but are semantically related.</p>
+
+                <h3>4. Comprehensive Dataset Management</h3>
+
+                <p>The tool provides cleanup options:</p>
+
+                <ul>
+                    <li><strong>Clear Q&A Dataset:</strong> Remove the CSV while keeping FAISS indexes</li>
+                    <li><strong>Clear All FAISS Indexes:</strong> Remove vector indexes while keeping Q&A data</li>
+                    <li><strong>Clear Everything:</strong> Fresh start</li>
+                </ul>
+
+                <p>This granular control lets you iterate and experiment efficiently.</p>
+
+                <h3>5. FAISS Index Management</h3>
+
+                <p>The dedicated management section shows:</p>
+
+                <ul>
+                    <li>All available FAISS indexes</li>
+                    <li>File sizes (storage efficiency)</li>
+                    <li>Vector counts (dataset size)</li>
+                    <li>Individual deletion options</li>
+                </ul>
+
+                <p>Perfect for managing large document collections.</p>
+
+                <h2>Use Cases and Applications</h2>
+
+                <h3>1. Fine-Tuning Dataset Creation</h3>
+
+                <p>Generate training data for:</p>
+
+                <ul>
+                    <li>Domain-specific language models</li>
+                    <li>Instruction-tuned models</li>
+                    <li>Question-answering systems</li>
+                </ul>
+
+                <p><strong>Example:</strong> A medical organization could process thousands of research papers to create a specialized medical Q&A dataset for fine-tuning a healthcare chatbot.</p>
+
+                <h3>2. RAG System Development</h3>
+
+                <p>Build retrieval-augmented generation systems:</p>
+
+                <ul>
+                    <li>The FAISS indexes enable fast retrieval</li>
+                    <li>Q&A pairs serve as example interactions</li>
+                    <li>Semantic search finds relevant context</li>
+                </ul>
+
+                <p><strong>Example:</strong> A legal firm could create a searchable knowledge base where lawyers query past cases and precedents using natural language.</p>
+
+                <h3>3. Educational Content Generation</h3>
+
+                <p>Create study materials:</p>
+
+                <ul>
+                    <li>Quiz questions from textbooks</li>
+                    <li>Practice tests from course materials</li>
+                    <li>Review questions from lecture notes</li>
+                </ul>
+
+                <p><strong>Example:</strong> An online learning platform processes course PDFs to generate thousands of practice questions for students.</p>
+
+                <h3>4. Documentation Intelligence</h3>
+
+                <p>Make technical documentation interactive:</p>
+
+                <ul>
+                    <li>Extract Q&A from API docs</li>
+                    <li>Create FAQs from user manuals</li>
+                    <li>Build searchable troubleshooting guides</li>
+                </ul>
+
+                <p><strong>Example:</strong> A software company processes product documentation to create an intelligent help system.</p>
+
+                <h3>5. Research Literature Review</h3>
+
+                <p>Analyze academic papers:</p>
+
+                <ul>
+                    <li>Extract key findings as Q&A</li>
+                    <li>Find related research through semantic search</li>
+                    <li>Build knowledge graphs from paper relationships</li>
+                </ul>
+
+                <p><strong>Example:</strong> Researchers query across hundreds of papers to find works discussing specific methodologies.</p>
+
+                <h2>Best Practices and Optimization Tips</h2>
+
+                <h3>1. Choosing the Right Models</h3>
+
+                <p><strong>For Generation:</strong></p>
+
+                <ul>
+                    <li>Small documents (&lt; 100 pages): Gemma 3:4b, Llama 3:8b</li>
+                    <li>Large documents: Qwen 2.5:7b, Mistral:7b</li>
+                    <li>High quality needs: Llama 3:70b, Mixtral:8x7b</li>
+                </ul>
+
+                <p><strong>For Embeddings:</strong></p>
+
+                <ul>
+                    <li>Speed priority: nomic-embed-text (dimension: 768)</li>
+                    <li>Quality priority: bge-large (dimension: 1024)</li>
+                    <li>Balanced: qwen3-embedding:0.6b (dimension: 512)</li>
+                </ul>
+
+                <h3>2. Optimal Chunking Strategy</h3>
+
+                <p>Adjust based on document type:</p>
+
+                <p><strong>Technical documents:</strong></p>
+
+                <pre><code>chunk_size=1500  # Longer for complex concepts
+chunk_overlap=300  # More overlap for technical continuity</code></pre>
+
+                <p><strong>Narrative content:</strong></p>
+
+                <pre><code>chunk_size=800  # Shorter for distinct ideas
+chunk_overlap=150  # Less overlap needed</code></pre>
+
+                <p><strong>Structured content (FAQs, lists):</strong></p>
+
+                <pre><code>chunk_size=500  # Very short for discrete items
+chunk_overlap=50  # Minimal overlap</code></pre>
+
+                <h3>3. Context Chunk Optimization</h3>
+
+                <p>The <code>num_related_chunks</code> parameter significantly impacts quality:</p>
+
+                <ul>
+                    <li>0-1 chunks: Fast but limited context</li>
+                    <li>2-3 chunks: Balanced (recommended default)</li>
+                    <li>4-5 chunks: Rich context but slower, may overwhelm LLM</li>
+                    <li>6+ chunks: Diminishing returns, token limit concerns</li>
+                </ul>
+
+                <p><strong>Pro tip:</strong> Start with 3, then experiment based on your document type.</p>
+
+                <h3>4. Batch Processing Strategy</h3>
+
+                <p>For large document collections:</p>
+
+                <ul>
+                    <li>Process in batches (e.g., 10 PDFs at a time)</li>
+                    <li>Monitor system resources (RAM, GPU if available)</li>
+                    <li>Use incremental CSV append (already built-in)</li>
+                    <li>Schedule overnight for hundreds of documents</li>
+                </ul>
+
+                <h3>5. Quality Assurance</h3>
+
+                <p>Regularly review generated Q&A:</p>
+
+                <pre><code># Sample random entries
+sample = df.sample(n=20)
+
+# Check for common issues:
+# - Incomplete questions/answers
+# - Repetitive content
+# - Formatting problems</code></pre>
+
+                <p>Adjust prompts based on findings.</p>
+
+                <h2>Advanced Techniques</h2>
+
+                <h3>1. Custom Prompt Engineering</h3>
+
+                <p>Modify the QA generation prompt for specific needs:</p>
+
+                <p><strong>For factual Q&A:</strong></p>
+
+                <pre><code>qa_prompt_template = """Generate a FACTUAL question that can be answered 
+directly from the main text. Avoid opinion or interpretation questions.
+
+Focus on: who, what, when, where, how many, how much
+
+{context}
+
+OUTPUT:"""</code></pre>
+
+                <p><strong>For comprehension Q&A:</strong></p>
+
+                <pre><code>qa_prompt_template = """Generate a COMPREHENSION question that requires 
+understanding and synthesis of the main concept.
+
+Focus on: why, how, what is the significance, what are the implications
+
+{context}
+
+OUTPUT:"""</code></pre>
+
+                <h3>2. Multi-Stage Filtering</h3>
+
+                <p>Add quality filters:</p>
+
+                <pre><code>def is_quality_qa(question, answer):
+    # Check minimum length
+    if len(question) < 20 or len(answer) < 50:
+        return False
+    
+    # Check for question mark
+    if not question.strip().endswith('?'):
+        return False
+    
+    # Check for generic responses
+    generic_phrases = ["as mentioned", "the text says", "according to"]
+    if any(phrase in answer.lower() for phrase in generic_phrases):
+        return False
+    
+    return True</code></pre>
+
+                <h3>3. Hierarchical Chunking</h3>
+
+                <p>For documents with clear structure:</p>
+
+                <pre><code># Create parent chunks (sections)
+parent_splitter = RecursiveCharacterTextSplitter(
+    chunk_size=3000,
+    chunk_overlap=500
+)
+
+# Create child chunks (paragraphs)
+child_splitter = RecursiveCharacterTextSplitter(
+    chunk_size=1000,
+    chunk_overlap=200
+)
+
+# Generate Q&A from children, but use parent as context</code></pre>
+
+                <h3>4. Embedding Model Ensembles</h3>
+
+                <p>Use multiple embedding models for robustness:</p>
+
+                <pre><code># Generate embeddings with multiple models
+embedding1 = model1.embed_query(text)
+embedding2 = model2.embed_query(text)
+
+# Concatenate or average
+combined = np.concatenate([embedding1, embedding2])
+# or
+averaged = (np.array(embedding1) + np.array(embedding2)) / 2</code></pre>
+
+                <h3>5. Dynamic Context Window</h3>
+
+                <p>Adjust context based on main chunk complexity:</p>
+
+                <pre><code>def get_adaptive_context_count(main_chunk):
+    # More context for complex chunks
+    if len(main_chunk) < 500:
+        return 5  # Short chunk needs more context
+    elif len(main_chunk) > 1500:
+        return 2  # Long chunk already has context
+    else:
+        return 3  # Standard</code></pre>
+
+                <h2>Performance Optimization</h2>
+
+                <h3>Memory Management</h3>
+
+                <p>For large document sets:</p>
+
+                <pre><code># Process in batches to manage memory
+def process_large_pdf_set(pdf_files, batch_size=10):
+    for i in range(0, len(pdf_files), batch_size):
+        batch = pdf_files[i:i+batch_size]
+        process_batch(batch)
+        
+        # Clear memory
+        import gc
+        gc.collect()</code></pre>
+
+                <h3>FAISS Optimization</h3>
+
+                <p>For very large indexes (millions of vectors):</p>
+
+                <pre><code># Use IVF (Inverted File) index for faster search
+quantizer = faiss.IndexFlatL2(dimension)
+index = faiss.IndexIVFFlat(quantizer, dimension, nlist=100)
+
+# Train the index
+index.train(embeddings_array)
+index.add(embeddings_array)
+
+# Search with probe parameter
+index.nprobe = 10  # Trade-off between speed and accuracy</code></pre>
+
+                <h3>Parallel Processing</h3>
+
+                <p>Speed up embedding generation:</p>
+
+                <pre><code>from concurrent.futures import ThreadPoolExecutor
+
+def generate_embeddings_parallel(chunks, model, max_workers=4):
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+        embeddings = list(executor.map(
+            lambda c: model.embed_query(c.page_content),
+            chunks
+        ))
+    return embeddings</code></pre>
+
+                <h2>Troubleshooting Common Issues</h2>
+
+                <h3>Issue 1: Out of Memory Errors</h3>
+
+                <p><strong>Symptoms:</strong> Process crashes during embedding generation</p>
+
+                <p><strong>Solutions:</strong></p>
+
+                <ul>
+                    <li>Reduce chunk size</li>
+                    <li>Process fewer PDFs at once</li>
+                    <li>Use smaller embedding model</li>
+                    <li>Enable batch processing</li>
+                </ul>
+
+                <h3>Issue 2: Poor Quality Q&A</h3>
+
+                <p><strong>Symptoms:</strong> Generic, repetitive, or incomplete Q&A pairs</p>
+
+                <p><strong>Solutions:</strong></p>
+
+                <ul>
+                    <li>Adjust prompt template</li>
+                    <li>Increase related chunks for more context</li>
+                    <li>Try different generation model</li>
+                    <li>Increase chunk size for more information</li>
+                </ul>
+
+                <h3>Issue 3: Slow Processing</h3>
+
+                <p><strong>Symptoms:</strong> Takes hours for small document sets</p>
+
+                <p><strong>Solutions:</strong></p>
+
+                <ul>
+                    <li>Use smaller/faster models</li>
+                    <li>Reduce number of related chunks</li>
+                    <li>Enable GPU acceleration in Ollama</li>
+                    <li>Implement parallel processing</li>
+                </ul>
+
+                <h3>Issue 4: FAISS Index Errors</h3>
+
+                <p><strong>Symptoms:</strong> Can't load or search indexes</p>
+
+                <p><strong>Solutions:</strong></p>
+
+                <ul>
+                    <li>Ensure float32 dtype for embeddings</li>
+                    <li>Check dimension consistency</li>
+                    <li>Verify index files aren't corrupted</li>
+                    <li>Regenerate indexes if needed</li>
+                </ul>
+
+                <h3>Issue 5: Inconsistent Formatting</h3>
+
+                <p><strong>Symptoms:</strong> Q&A pairs missing or malformed</p>
+
+                <p><strong>Solutions:</strong></p>
+
+                <ul>
+                    <li>Strengthen prompt formatting instructions</li>
+                    <li>Implement regex-based parsing</li>
+                    <li>Add validation before saving</li>
+                    <li>Use few-shot examples in prompt</li>
+                </ul>
+
+                <h2>Future Enhancements and Roadmap</h2>
+
+                <h3>Near-Term Improvements</h3>
+
+                <h4>1. Multi-Modal Support</h4>
+
+                <ul>
+                    <li>Extract and process images from PDFs</li>
+                    <li>Generate Q&A about diagrams and charts</li>
+                    <li>Use vision-language models</li>
+                </ul>
+
+                <h4>2. Active Learning</h4>
+
+                <ul>
+                    <li>Flag uncertain Q&A for human review</li>
+                    <li>Learn from corrections</li>
+                    <li>Iteratively improve quality</li>
+                </ul>
+
+                <h4>3. Customizable Templates</h4>
+
+                <ul>
+                    <li>Different Q&A formats (multiple choice, true/false)</li>
+                    <li>Domain-specific templates (medical, legal, technical)</li>
+                    <li>Difficulty levels</li>
+                </ul>
+
+                <h3>Medium-Term Features</h3>
+
+                <h4>4. Advanced FAISS Indexes</h4>
+
+                <ul>
+                    <li>Implement IVF for large-scale search</li>
+                    <li>Add PQ (Product Quantization) for compression</li>
+                    <li>Support GPU-accelerated search</li>
+                </ul>
+
+                <h4>5. Metadata Enrichment</h4>
+
+                <ul>
+                    <li>Extract document structure (headings, sections)</li>
+                    <li>Preserve page numbers for citations</li>
+                    <li>Add topic/category tags</li>
+                </ul>
+
+                <h4>6. Quality Metrics</h4>
+
+                <ul>
+                    <li>Automatic quality scoring</li>
+                    <li>Diversity measures</li>
+                    <li>Coherence evaluation</li>
+                </ul>
+
+                <h3>Long-Term Vision</h3>
+
+                <h4>7. Distributed Processing</h4>
+
+                <ul>
+                    <li>Multi-machine processing for massive datasets</li>
+                    <li>Distributed FAISS indexes</li>
+                    <li>Cluster coordination</li>
+                </ul>
+
+                <h4>8. Interactive Refinement</h4>
+
+                <ul>
+                    <li>Web interface for editing Q&A</li>
+                    <li>Feedback loop for model improvement</li>
+                    <li>Collaborative annotation</li>
+                </ul>
+
+                <h4>9. Export Formats</h4>
+
+                <ul>
+                    <li>JSONL for LLM fine-tuning</li>
+                    <li>Hugging Face datasets</li>
+                    <li>Custom formats for specific platforms</li>
+                </ul>
+
+                <h2>Conclusion</h2>
+
+                <p>Building high-quality Q&A datasets is no longer a bottleneck for AI development. This tool demonstrates how combining modern technologies—local LLMs, semantic embeddings, and vector databases—can create a powerful, privacy-first solution for generating contextually-aware training data.</p>
+
+                <p>Whether you're a researcher, developer, educator, or enterprise team, this approach offers a scalable, cost-effective way to transform your document collections into intelligent, searchable knowledge bases.</p>
+
+                <p>The future of AI lies not just in larger models, but in better data. With tools like this, we're democratizing access to high-quality training data, enabling everyone to build specialized AI systems tailored to their unique domains.</p>
+
+            </div>
+
+        </main>
+
+    </div>
+
+</body>
+</html>

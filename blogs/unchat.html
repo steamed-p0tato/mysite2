@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Coming Soon</title>
+    <!-- Include Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Remove Inter font -->
+    <style>
+        /* Apply base font from the theme */
+        body {
+            font-family: 'Times New Roman', Times, serif;
+        }
+
+        /* Style for the back button, from the new theme */
+        .back-link {
+            display: inline-block;
+            text-decoration: none;
+            color: #5d5d5d;
+            border: 1px solid #888;
+            padding: 8px 20px;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+            font-family: sans-serif; /* Use sans-serif for button as in theme */
+            margin-top: 2rem; /* Give it some space */
+        }
+        .back-link:hover {
+            background-color: #5d5d5d;
+            color: #f0efeb;
+        }
+    </style>
+</head>
+<!-- Apply new theme background and text colors -->
+<body class="bg-[#f0efeb] text-[#5d5d5d] min-h-screen flex items-center justify-center p-4">
+
+    <!-- Apply theme's card style (white bg, border) -->
+    <main class="text-center bg-white p-8 sm:p-12 rounded-xl border border-[#dcdcdc] shadow-lg max-w-lg w-full">
+        <!-- Main Heading -->
+        <!-- Apply theme's title font (normal weight) and color -->
+        <h1 class="text-4xl sm:text-5xl font-normal text-[#5d5d5d] mb-4">
+            Coming Soon
+        </h1>
+
+        <!-- Subheading -->
+        <!-- Apply theme's paragraph text color -->
+        <p class="text-lg text-[#5d5d5d] mb-8">
+            We're working hard to bring you something amazing.
+            Stay tuned!
+        </p>
+
+        <!-- Countdown Timer Placeholder (Optional) -->
+        <!-- You could add a JavaScript countdown timer here -->
+
+        <!-- Back Home Button -->
+        <!-- Use the new .back-link class and remove Tailwind button classes -->
+        <a href="https://www.ariyanbasu.site" class="back-link">
+            Go Back Home
+        </a>
+    </main>
+
+</body>
+</html>
+

@@ -4,291 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>About - Ariyan Basu</title>
-    <style>
-        /* --- 1. Basic Setup & Fonts --- */
-        body {
-            background-color: #f0efeb;
-            color: #5d5d5d;
-            font-family: 'Times New Roman', Times, serif;
-            margin: 0;
-            padding: 2rem;
-        }
-
-        /* --- 2. Main Layout (CSS Grid) --- */
-        .container {
-            display: grid;
-            grid-template-columns: 1.5fr 2fr;
-            grid-template-rows: auto 1fr;
-            gap: 25px;
-            max-width: 1400px;
-            margin: auto;
-            border-top: 1px solid #dcdcdc;
-        }
-
-        /* --- 3. Grid Item Placement --- */
-        .header {
-            grid-column: 1 / -1;
-            grid-row: 1 / 2;
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            padding: 20px 0;
-            border-bottom: 1px solid #dcdcdc;
-        }
-
-        .left-col {
-            grid-column: 1 / 2;
-            grid-row: 2 / 3;
-            border-right: 1px solid #dcdcdc;
-            padding-right: 25px;
-        }
-
-        .right-col {
-            grid-column: 2 / 3;
-            grid-row: 2 / 3;
-            position: relative;
-            min-height: 80vh;
-        }
-        
-        /* --- 4. Header & Navigation --- */
-        .logo {
-            text-align: center;
-        }
-
-        .logo h1 {
-            font-size: 3.5rem;
-            margin: 0;
-            line-height: 1;
-            font-weight: normal;
-        }
-
-        .nav {
-            padding-top: 10px;
-        }
-
-        .nav a {
-            text-decoration: none;
-            color: #5d5d5d;
-            margin-left: 20px;
-            padding: 5px 10px;
-            font-size: 1rem;
-            transition: border 0.3s ease;
-        }
-
-        .nav a.active {
-            border: 1px solid #888;
-        }
-
-        .nav a:hover {
-            border: 1px solid #bbb;
-        }
-        
-        /* --- 5. Content Styling --- */
-        .subtitle {
-            font-family: sans-serif;
-            font-style: italic;
-            font-size: 0.8rem;
-            border-bottom: 1px dotted #888;
-            display: inline-block;
-            margin: 0;
-            padding-bottom: 2px;
-        }
-
-        .left-col h2 {
-            font-size: 0.9rem;
-            letter-spacing: 2px;
-            color: #888;
-            font-weight: normal;
-            margin-top: 2rem;
-            margin-bottom: 0.8rem;
-            text-transform: uppercase;
-        }
-
-        .left-col p {
-            font-size: 1.05rem;
-            line-height: 1.8;
-            margin: 0 0 1.5rem 0;
-        }
-
-        .left-col ul {
-            list-style: none;
-            padding: 0;
-            margin: 0 0 1.5rem 0;
-        }
-
-        .left-col ul li {
-            font-size: 1rem;
-            line-height: 1.8;
-            margin: 0.5rem 0;
-            padding-left: 1rem;
-            position: relative;
-        }
-
-        .left-col ul li:before {
-            content: "→";
-            position: absolute;
-            left: 0;
-            color: #888;
-        }
-
-        .left-col a {
-            color: #5d5d5d;
-            text-decoration: underline;
-            transition: color 0.3s ease;
-        }
-
-        .left-col a:hover {
-            color: #888;
-        }
-
-        .intro {
-            font-size: 1.1rem;
-            line-height: 1.8;
-            margin-bottom: 2rem;
-        }
-
-        /* --- 6. Canvas Styling --- */
-        canvas {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            display: block;
-            cursor: crosshair;
-            border-radius: 2px;
-        }
-
-        /* --- 7. Animation Stats --- */
-        .stats-panel {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            font-family: 'Courier New', Courier, monospace;
-            font-size: 0.65rem;
-            color: #000;
-            background-color: transparent;
-            padding: 6px 8px;
-            z-index: 10;
-            line-height: 1.5;
-            min-width: 140px;
-            text-shadow: 1px 1px 2px rgba(255, 255, 255, 0.8),
-                         -1px -1px 2px rgba(255, 255, 255, 0.8),
-                         1px -1px 2px rgba(255, 255, 255, 0.8),
-                         -1px 1px 2px rgba(255, 255, 255, 0.8);
-        }
-
-        .stats-panel .stat-row {
-            display: flex;
-            justify-content: space-between;
-            margin: 1px 0;
-            border-bottom: 1px dotted rgba(0, 0, 0, 0.25);
-            padding-bottom: 1px;
-        }
-
-        .stats-panel .stat-label {
-            color: #222;
-            font-weight: bold;
-        }
-
-        .stats-panel .stat-value {
-            color: #000;
-            text-align: right;
-        }
-
-        .stats-panel .section-title {
-            font-weight: bold;
-            margin-top: 6px;
-            margin-bottom: 3px;
-            color: #000;
-            border-bottom: 1.5px solid #000;
-            padding-bottom: 1px;
-            font-size: 0.68rem;
-        }
-
-        .stats-panel .section-title:first-child {
-            margin-top: 0;
-        }
-
-        .fibonacci-display {
-            position: absolute;
-            bottom: 10px;
-            right: 10px;
-            font-family: 'Courier New', Courier, monospace;
-            font-size: 0.65rem;
-            color: #000;
-            background-color: transparent;
-            padding: 6px 8px;
-            z-index: 10;
-            line-height: 1.5;
-            max-width: 180px;
-            word-wrap: break-word;
-            text-shadow: 1px 1px 2px rgba(255, 255, 255, 0.8),
-                         -1px -1px 2px rgba(255, 255, 255, 0.8),
-                         1px -1px 2px rgba(255, 255, 255, 0.8),
-                         -1px 1px 2px rgba(255, 255, 255, 0.8);
-        }
-
-        .fibonacci-display .section-title {
-            font-weight: bold;
-            margin-bottom: 4px;
-            color: #000;
-            border-bottom: 1.5px solid #000;
-            padding-bottom: 1px;
-            font-size: 0.68rem;
-        }
-
-        .fibonacci-display .fib-row {
-            margin: 2px 0;
-            font-size: 0.62rem;
-        }
-
-        /* --- 8. Responsive Design --- */
-        @media (max-width: 768px) {
-            .container {
-                grid-template-columns: 1fr;
-                grid-template-rows: auto auto auto;
-            }
-
-            .header {
-                flex-direction: column;
-                align-items: center;
-            }
-
-            .nav {
-                margin-top: 15px;
-            }
-
-            .nav a {
-                margin: 0 10px;
-            }
-
-            .left-col {
-                border-right: none;
-                border-bottom: 1px solid #dcdcdc;
-                padding-right: 0;
-                padding-bottom: 25px;
-            }
-
-            .right-col {
-                grid-column: 1 / 2;
-                min-height: 50vh;
-            }
-
-            .logo h1 {
-                font-size: 2.5rem;
-            }
-
-            .stats-panel, .fibonacci-display {
-                font-size: 0.55rem;
-                min-width: 120px;
-            }
-        }
-    </style>
+    <link rel="stylesheet" href="style.css">
+    <script>if(sessionStorage.getItem('theme')==='dark')document.documentElement.dataset.theme='dark';</script>
+    <script src="theme.js" defer></script>
 </head>
-<body>
+<body class="page-about">
 
-    <div class="container">
+    <div class="container split">
 
         <header class="header">
             <div class="logo">
@@ -297,9 +19,11 @@
             <nav class="nav">
                 <a href="about.html" class="active">about</a>
                 <a href="blog.html">blog</a>
+                <a href="gear.html">gear</a>
                 <a href="https://github.com/steamed-p0tato" target="_blank" rel="noopener noreferrer">github</a>
                 <a href="https://huggingface.co/steamed-potatop" target="_blank" rel="noopener noreferrer">huggingface</a>
                 <a href="contact.html">contact</a>
+                <button type="button" id="theme-toggle" class="theme-toggle" aria-label="Switch to dark mode" title="Switch to dark mode">☾</button>
             </nav>
         </header>
 
@@ -327,396 +51,366 @@
                 <li><a href="https://www.lenovo.com/thinkpad" target="_blank" rel="noopener">ThinkPad</a> enthusiast</li>
             </ul>
 
-            <h2>What I'm Doing Right Now</h2>
+            <h2>Projects</h2>
+
+            <h3>AI &amp; Language Models</h3>
             <ul>
-                <li><a href="https://demole.app/" target="_blank" rel="noopener noreferrer">Building a startup around AI for legal tech called Demole</a></li>
-                <li>Doing research on early Glaucoma detection with a novel CNN architecture</li>
-                <li>Pre-training domain specific AI for school students under my uni</li>
-                <li>Learning more fundamental AI knowledge at architecture level</li>
-                <li><a href="https://skywaave.com/" target="_blank" rel="noopener noreferrer">Building drones and other electronics at skywaave</a></li>
+                <li><strong>GTLM</strong> (Generative Tiny Language Model) — a Liquid Neural Network (LNN) combined with a novel continuous-time RoPE for better inference efficiency and performance (papers pending).</li>
+                <li><strong>UnChat Mini</strong> — a high-efficiency, localized document query system using advanced semantic chunking and custom vector databases.</li>
+            </ul>
+
+            <h3>Networking &amp; Systems</h3>
+            <ul>
+                <li><strong>Panictunnl</strong> (formerly Skytunnel) — an SSH-based reverse proxy for secure port forwarding and exposing local servers to the internet, managed through a minimalist TUI dashboard.</li>
+                <li><strong>Panic Monitr</strong> — a peer-to-peer system-monitoring and remote-SSH tool that bypasses strict NATs and aggressive enterprise/university firewalls to reach dev infrastructure from home.</li>
+                <li><strong>Panicfldr</strong> (formerly Skyfoldr) — a desktop file-sharing utility pairing a PyQt frontend with a Flask backend, routing data over the panictunnl network.</li>
+            </ul>
+            <p class="note">Part of <a href="https://paniclab.tech" target="_blank" rel="noopener noreferrer">paniclab.tech</a>. The older mesh-networking service, relayp2p, has been deprecated.</p>
+
+            <h3>Open Source &amp; Utilities</h3>
+            <ul>
+                <li><strong>who-owes</strong> — a privacy-centric, open-source alternative to commercial group expense-tracking apps.</li>
+            </ul>
+
+            <h2>Hardware, Infrastructure &amp; Lab</h2>
+            <ul>
+                <li><strong>Homelabbing &amp; self-hosting</strong> — a secure, self-hosted Linux server environment for automation, service hosting, and seeding network nodes.</li>
+                <li><strong>Rapid prototyping</strong> — a Bambu Lab A1 Mini 3D printer for fabricating structural parts and custom mechanical/hardware modifications.</li>
+            </ul>
+
+            <h2>Workflow &amp; Design</h2>
+            <ul>
+                <li><strong>Aesthetics</strong> — strict minimalist, developer-centric design principles; a strong preference for TUIs with sharp black-and-cyan color schemes.</li>
+                <li><strong>Input efficiency</strong> — high-speed touch-typing on ThinkPad scissor-switch keyboards and Topre-style electrostatic capacitive plunger mechanisms, paired with blank keycaps.</li>
             </ul>
         </aside>
 
         <main class="right-col">
             <div class="stats-panel">
-                <div class="section-title">PERFORMANCE</div>
-                <div class="stat-row">
-                    <span class="stat-label">FPS:</span>
-                    <span class="stat-value" id="fps">0</span>
-                </div>
-                <div class="stat-row">
-                    <span class="stat-label">Frames:</span>
-                    <span class="stat-value" id="frameCount">0</span>
-                </div>
-                <div class="stat-row">
-                    <span class="stat-label">Runtime:</span>
-                    <span class="stat-value" id="runtime">0s</span>
-                </div>
-                
-                <div class="section-title">PARTICLES</div>
-                <div class="stat-row">
-                    <span class="stat-label">Active:</span>
-                    <span class="stat-value" id="particleCount">0</span>
-                </div>
-                <div class="stat-row">
-                    <span class="stat-label">Max:</span>
-                    <span class="stat-value" id="maxParticles">600</span>
-                </div>
-                <div class="stat-row">
-                    <span class="stat-label">Avg Age:</span>
-                    <span class="stat-value" id="avgAge">0</span>
-                </div>
-                
-                <div class="section-title">SPIRAL</div>
-                <div class="stat-row">
-                    <span class="stat-label">Index:</span>
-                    <span class="stat-value" id="spiralIndex">0</span>
-                </div>
-                <div class="stat-row">
-                    <span class="stat-label">Rotation:</span>
-                    <span class="stat-value" id="rotation">0°</span>
-                </div>
-                <div class="stat-row">
-                    <span class="stat-label">φ (Golden):</span>
-                    <span class="stat-value">1.618034</span>
-                </div>
-                
-                <div class="section-title">MOUSE</div>
-                <div class="stat-row">
-                    <span class="stat-label">X:</span>
-                    <span class="stat-value" id="mouseX">-</span>
-                </div>
-                <div class="stat-row">
-                    <span class="stat-label">Y:</span>
-                    <span class="stat-value" id="mouseY">-</span>
-                </div>
-                <div class="stat-row">
-                    <span class="stat-label">Radius:</span>
-                    <span class="stat-value" id="mouseRadius">150px</span>
-                </div>
+                <div class="section-title">NETWORK</div>
+                <div class="stat-row"><span class="stat-label">Arch:</span><span class="stat-value" id="arch">-</span></div>
+                <div class="stat-row"><span class="stat-label">Neurons:</span><span class="stat-value" id="neurons">0</span></div>
+                <div class="stat-row"><span class="stat-label">Params:</span><span class="stat-value" id="params">0</span></div>
+                <div class="stat-row"><span class="stat-label">Activation:</span><span class="stat-value" id="activation">ReLU→Softmax</span></div>
+
+                <div class="section-title">TRAINING</div>
+                <div class="stat-row"><span class="stat-label">Epoch:</span><span class="stat-value" id="epoch">0</span></div>
+                <div class="stat-row"><span class="stat-label">Loss:</span><span class="stat-value" id="loss">0.0000</span></div>
+                <div class="stat-row"><span class="stat-label">Accuracy:</span><span class="stat-value" id="accuracy">0%</span></div>
+                <div class="stat-row"><span class="stat-label">LR:</span><span class="stat-value" id="lr">0.0100</span></div>
+
+                <div class="section-title">FORWARD PASS</div>
+                <div class="stat-row"><span class="stat-label">Signals:</span><span class="stat-value" id="signals">0</span></div>
+                <div class="stat-row"><span class="stat-label">FPS:</span><span class="stat-value" id="fps">0</span></div>
+
+                <div class="section-title">INPUT</div>
+                <div class="stat-row"><span class="stat-label">x&#8320;:</span><span class="stat-value" id="inX">-</span></div>
+                <div class="stat-row"><span class="stat-label">x&#8321;:</span><span class="stat-value" id="inY">-</span></div>
             </div>
-            
-            <div class="fibonacci-display">
-                <div class="section-title">FIBONACCI SEQUENCE</div>
-                <div class="fib-row">n = <span id="fibIndex">0</span></div>
-                <div class="fib-row">F(n) = <span id="fibValue">0</span></div>
-                <div class="fib-row">F(n-1) = <span id="fibPrev">0</span></div>
-                <div class="fib-row">Ratio = <span id="fibRatio">-</span></div>
+
+            <div class="output-display">
+                <div class="section-title">PREDICTION</div>
+                <div class="out-row" id="pred0">c0 ░░░░░░░░░░ 0%</div>
+                <div class="out-row" id="pred1">c1 ░░░░░░░░░░ 0%</div>
+                <div class="out-row" id="pred2">c2 ░░░░░░░░░░ 0%</div>
+                <div class="out-row" id="predTop">argmax → -</div>
             </div>
-            <canvas id="fibonacciCanvas"></canvas>
+            <canvas id="netCanvas"></canvas>
         </main>
 
     </div>
 
     <script>
-        const canvas = document.getElementById("fibonacciCanvas");
+        // ---- Feed-forward neural network — live forward pass + training sim ----
+        const canvas = document.getElementById("netCanvas");
         const ctx = canvas.getContext("2d");
 
+        const LAYER_SIZES = [4, 7, 7, 3];
+        const LAYER_LABELS = ["input", "hidden", "hidden", "output"];
+
+        let W = 0, H = 0;
+        let layers = [];     // [layer][node] -> {x, y, act}
+        let weights = [];    // weights[l][to][from]
+        let biases = [];
+
+        const mouse = { x: null, y: null };
+
+        // perf + animation phase
+        let frames = 0, fps = 0, lastTime = performance.now(), flow = 0;
+
+        // simulated training state
+        let epoch = 0, step = 0, loss = 2.302, acc = 0.10, lr = 0.01;
+
+        // Standard normal via Box–Muller
+        function randn() {
+            let u = 0, v = 0;
+            while (u === 0) u = Math.random();
+            while (v === 0) v = Math.random();
+            return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+        }
+
+        function initNetwork() {
+            weights = []; biases = [];
+            for (let l = 1; l < LAYER_SIZES.length; l++) {
+                const fromN = LAYER_SIZES[l - 1], toN = LAYER_SIZES[l];
+                const scale = Math.sqrt(2 / fromN); // He initialisation
+                const w = [];
+                for (let i = 0; i < toN; i++) {
+                    const row = [];
+                    for (let j = 0; j < fromN; j++) row.push(randn() * scale);
+                    w.push(row);
+                }
+                weights.push(w);
+                const b = [];
+                for (let i = 0; i < toN; i++) b.push(randn() * 0.1);
+                biases.push(b);
+            }
+            epoch = 0; step = 0; loss = 2.302; acc = 0.10; lr = 0.01;
+        }
+
+        function layoutNetwork() {
+            layers = [];
+            const padX = Math.min(80, W * 0.14);
+            const padY = 46;
+            const usableW = W - padX * 2;
+            const L = LAYER_SIZES.length;
+            for (let l = 0; l < L; l++) {
+                const n = LAYER_SIZES[l];
+                const x = padX + (L === 1 ? 0 : usableW * l / (L - 1));
+                const spanH = H - padY * 2;
+                const nodes = [];
+                for (let i = 0; i < n; i++) {
+                    const y = n === 1 ? H / 2 : padY + spanH * i / (n - 1);
+                    nodes.push({ x, y, act: 0 });
+                }
+                layers.push(nodes);
+            }
+        }
+
         function resizeCanvas() {
-            canvas.width = canvas.clientWidth;
-            canvas.height = canvas.clientHeight;
+            const dpr = window.devicePixelRatio || 1;
+            W = canvas.clientWidth;
+            H = canvas.clientHeight;
+            canvas.width = Math.round(W * dpr);
+            canvas.height = Math.round(H * dpr);
+            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+            layoutNetwork();
         }
         window.addEventListener("resize", resizeCanvas);
-        resizeCanvas();
 
-        let angle = 0;
-        let n = 0;
-        const particles = [];
-        const maxParticles = 600;
-        const mouse = { x: null, y: null, radius: 150 };
-
-        // Frame counter variables
-        let frameCount = 0;
-        let lastTime = performance.now();
-        let startTime = performance.now();
-        let fps = 0;
-
-        // Fibonacci calculation cache
-        const fibCache = [0, 1];
-        function fibonacci(num) {
-            if (num < fibCache.length) {
-                return fibCache[num];
-            }
-            for (let i = fibCache.length; i <= num; i++) {
-                fibCache[i] = fibCache[i - 1] + fibCache[i - 2];
-            }
-            return fibCache[num];
-        }
-
-        // Update display elements
-        function updateStats() {
-            // Performance stats
-            document.getElementById('frameCount').textContent = frameCount;
-            document.getElementById('fps').textContent = Math.round(fps);
-            
-            const runtime = Math.floor((performance.now() - startTime) / 1000);
-            const minutes = Math.floor(runtime / 60);
-            const seconds = runtime % 60;
-            document.getElementById('runtime').textContent = 
-                minutes > 0 ? `${minutes}m ${seconds}s` : `${seconds}s`;
-            
-            // Particle stats
-            document.getElementById('particleCount').textContent = particles.length;
-            const avgAge = particles.length > 0 
-                ? Math.round(particles.reduce((sum, p) => sum + p.age, 0) / particles.length)
-                : 0;
-            document.getElementById('avgAge').textContent = avgAge;
-            
-            // Spiral stats
-            document.getElementById('spiralIndex').textContent = n;
-            document.getElementById('rotation').textContent = 
-                (((angle * 180 / Math.PI) % 360).toFixed(1)) + '°';
-            
-            // Mouse stats
-            document.getElementById('mouseX').textContent = 
-                mouse.x !== null ? Math.round(mouse.x) : '-';
-            document.getElementById('mouseY').textContent = 
-                mouse.y !== null ? Math.round(mouse.y) : '-';
-            
-            // Fibonacci stats
-            document.getElementById('fibIndex').textContent = n;
-            
-            const fibValue = fibonacci(n);
-            const fibPrev = n > 0 ? fibonacci(n - 1) : 0;
-            
-            const fibStr = fibValue.toString();
-            if (fibStr.length > 35) {
-                document.getElementById('fibValue').textContent = 
-                    fibStr.substring(0, 32) + '...';
-            } else {
-                document.getElementById('fibValue').textContent = fibStr;
-            }
-            
-            const prevStr = fibPrev.toString();
-            if (prevStr.length > 35) {
-                document.getElementById('fibPrev').textContent = 
-                    prevStr.substring(0, 32) + '...';
-            } else {
-                document.getElementById('fibPrev').textContent = prevStr;
-            }
-            
-            if (n > 1) {
-                const ratio = fibValue / fibPrev;
-                document.getElementById('fibRatio').textContent = ratio.toFixed(6);
-            } else {
-                document.getElementById('fibRatio').textContent = '-';
-            }
-        }
-
-        // Mouse interaction
         canvas.addEventListener("mousemove", (e) => {
             const rect = canvas.getBoundingClientRect();
             mouse.x = e.clientX - rect.left;
             mouse.y = e.clientY - rect.top;
         });
+        canvas.addEventListener("mouseleave", () => { mouse.x = null; mouse.y = null; });
 
-        canvas.addEventListener("mouseleave", () => {
-            mouse.x = null;
-            mouse.y = null;
-        });
+        function relu(x) { return x > 0 ? x : 0; }
+        function softmax(arr) {
+            const m = Math.max(...arr);
+            const ex = arr.map(v => Math.exp(v - m));
+            const s = ex.reduce((a, b) => a + b, 0);
+            return ex.map(v => v / s);
+        }
 
-        class Particle {
-            constructor(x, y, index) {
-                this.x = x;
-                this.y = y;
-                this.baseX = x;
-                this.baseY = y;
-                this.size = 2.5 + Math.random() * 4;
-                this.baseSize = this.size;
-                this.opacity = 0;
-                this.age = 0;
-                this.maxAge = 350 + Math.random() * 150;
-                this.speed = 0.4 + Math.random() * 0.4;
-                this.vx = 0;
-                this.vy = 0;
-                this.hue = 80 + Math.random() * 60; // More color variety
-                this.index = index;
-                this.pulseOffset = Math.random() * Math.PI * 2;
-                this.rotationSpeed = (Math.random() - 0.5) * 0.01;
-                this.energy = Math.random(); // Energy level for effects
+        // Drive the input vector from the cursor, or auto-animate when idle
+        function currentInput() {
+            const n = LAYER_SIZES[0];
+            const arr = [];
+            if (mouse.x !== null) {
+                const nx = mouse.x / W, ny = mouse.y / H;
+                for (let i = 0; i < n; i++)
+                    arr.push(0.5 + 0.5 * Math.sin(nx * 4.2 + i * 1.7) * Math.cos(ny * 4.2 + i * 0.9));
+            } else {
+                const t = flow * 0.02;
+                for (let i = 0; i < n; i++) arr.push(0.5 + 0.5 * Math.sin(t + i * 1.3));
             }
+            return arr;
+        }
 
-            update() {
-                this.age++;
-
-                // Smoother fade in and out
-                if (this.age < 40) {
-                    this.opacity = Math.pow(this.age / 40, 2);
-                } else if (this.age > this.maxAge - 80) {
-                    this.opacity = Math.pow((this.maxAge - this.age) / 80, 2);
-                } else {
-                    this.opacity = 1;
+        // Forward pass: writes activations onto the layer nodes, returns softmax output
+        function forward(input) {
+            for (let i = 0; i < layers[0].length; i++) layers[0][i].act = input[i];
+            let prev = input.slice();
+            for (let l = 1; l < LAYER_SIZES.length; l++) {
+                const w = weights[l - 1], b = biases[l - 1];
+                const isOut = l === LAYER_SIZES.length - 1;
+                const z = [];
+                for (let i = 0; i < LAYER_SIZES[l]; i++) {
+                    let s = b[i];
+                    for (let j = 0; j < prev.length; j++) s += w[i][j] * prev[j];
+                    z.push(s);
                 }
-
-                // More complex organic drift with multiple wave frequencies
-                const drift1 = Math.sin(this.age * 0.02 + this.pulseOffset) * this.speed;
-                const drift2 = Math.cos(this.age * 0.03 + this.pulseOffset * 2) * this.speed * 0.5;
-                const drift3 = Math.sin(this.age * 0.015 + this.pulseOffset * 0.5) * this.speed * 0.3;
-                
-                this.x += drift1 + drift2;
-                this.y += drift3 + Math.cos(this.age * 0.025 + this.pulseOffset) * this.speed * 0.6;
-
-                // More dynamic pulsing with multiple frequencies
-                const pulse1 = Math.sin(this.age * 0.05 + this.pulseOffset) * 0.4;
-                const pulse2 = Math.cos(this.age * 0.08 + this.pulseOffset * 1.5) * 0.2;
-                this.size = this.baseSize * (1 + (pulse1 + pulse2) * 0.4);
-
-                // Enhanced mouse interaction - stronger repulsion with wave effect
-                if (mouse.x != null && mouse.y != null) {
-                    const dx = this.x - mouse.x;
-                    const dy = this.y - mouse.y;
-                    const distance = Math.sqrt(dx * dx + dy * dy);
-
-                    if (distance < mouse.radius) {
-                        const force = Math.pow((mouse.radius - distance) / mouse.radius, 2);
-                        const angle = Math.atan2(dy, dx);
-                        const pushForce = force * 3.5;
-                        
-                        this.vx += Math.cos(angle) * pushForce;
-                        this.vy += Math.sin(angle) * pushForce;
-                        
-                        // Add orbital motion around cursor
-                        const orbitalForce = force * 1.5;
-                        this.vx += Math.cos(angle + Math.PI / 2) * orbitalForce * this.energy;
-                        this.vy += Math.sin(angle + Math.PI / 2) * orbitalForce * this.energy;
-                    }
-                }
-
-                // Apply velocity with variable damping
-                this.x += this.vx;
-                this.y += this.vy;
-                this.vx *= 0.88;
-                this.vy *= 0.88;
-
-                // Gentle return to base position with spring effect
-                const returnForce = 0.025;
-                const dx = this.baseX - this.x;
-                const dy = this.baseY - this.y;
-                this.x += dx * returnForce;
-                this.y += dy * returnForce;
+                const a = isOut ? softmax(z) : z.map(relu);
+                for (let i = 0; i < LAYER_SIZES[l]; i++)
+                    layers[l][i].act = isOut ? a[i] : Math.tanh(a[i]); // squash hidden for display
+                prev = a.slice();
             }
+            return prev;
+        }
 
-            draw() {
-                if (this.opacity <= 0) return;
-
-                // More dynamic color based on multiple factors
-                const hueShift = Math.sin(this.age * 0.03) * 20 + Math.cos(this.age * 0.02) * 10;
-                const saturation = 50 + Math.sin(this.age * 0.04) * 15 + this.energy * 20;
-                const lightness = 50 + Math.sin(this.age * 0.05) * 10;
-
-                // Main particle with enhanced gradient
-                ctx.beginPath();
-                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-
-                const gradient = ctx.createRadialGradient(
-                    this.x, this.y, 0,
-                    this.x, this.y, this.size * 2.5
-                );
-                gradient.addColorStop(0, `hsla(${this.hue + hueShift}, ${saturation + 25}%, ${lightness + 20}%, ${this.opacity})`);
-                gradient.addColorStop(0.4, `hsla(${this.hue + hueShift}, ${saturation + 10}%, ${lightness + 5}%, ${this.opacity * 0.8})`);
-                gradient.addColorStop(0.7, `hsla(${this.hue + hueShift}, ${saturation}%, ${lightness}%, ${this.opacity * 0.5})`);
-                gradient.addColorStop(1, `hsla(${this.hue + hueShift}, ${saturation - 10}%, ${lightness - 10}%, 0)`);
-
-                ctx.fillStyle = gradient;
-                ctx.fill();
-
-                // Enhanced glow effect with pulsing
-                const glowIntensity = 18 + Math.sin(this.age * 0.1) * 8 + this.energy * 10;
-                ctx.shadowBlur = glowIntensity;
-                ctx.shadowColor = `hsla(${this.hue + hueShift}, ${saturation}%, ${lightness}%, ${this.opacity * 0.8})`;
-                ctx.fill();
-                ctx.shadowBlur = 0;
-
-                // Add inner bright core for high energy particles
-                if (this.energy > 0.7) {
-                    ctx.beginPath();
-                    ctx.arc(this.x, this.y, this.size * 0.3, 0, Math.PI * 2);
-                    ctx.fillStyle = `hsla(${this.hue + hueShift}, 100%, 90%, ${this.opacity * 0.6})`;
-                    ctx.fill();
-                }
-            }
-
-            isDead() {
-                return this.age >= this.maxAge;
+        // Fake-but-plausible training curve: loss decays, accuracy climbs, LR schedules
+        function trainStep() {
+            const floor = 0.045;
+            loss += (floor - loss) * 0.01 + (Math.random() - 0.5) * 0.012 * Math.max(0.08, loss);
+            if (loss < 0.03) loss = 0.03 + Math.random() * 0.02;
+            acc += (0.985 - acc) * 0.01 + (Math.random() - 0.5) * 0.004;
+            acc = Math.max(0, Math.min(0.999, acc));
+            step++;
+            if (step % 30 === 0) {
+                epoch++;
+                lr = 0.01 * Math.pow(0.97, epoch);
+                // nudge the weights a touch each epoch so the picture keeps evolving
+                for (let l = 0; l < weights.length; l++)
+                    for (let i = 0; i < weights[l].length; i++)
+                        for (let j = 0; j < weights[l][i].length; j++)
+                            weights[l][i][j] += randn() * 0.015;
+                if (epoch >= 60) initNetwork(); // kick off a fresh training run
             }
         }
 
-        function drawConnections() {
-            ctx.lineWidth = 0.8;
-            const maxDistance = 90;
+        function setText(id, v) { const el = document.getElementById(id); if (el) el.textContent = v; }
 
-            for (let i = 0; i < particles.length; i++) {
-                for (let j = i + 1; j < Math.min(i + 8, particles.length); j++) {
-                    const dx = particles[i].x - particles[j].x;
-                    const dy = particles[i].y - particles[j].y;
-                    const distance = Math.sqrt(dx * dx + dy * dy);
+        function bar(p) {
+            const n = Math.max(0, Math.min(10, Math.round(p * 10)));
+            return "█".repeat(n) + "░".repeat(10 - n);
+        }
 
-                    if (distance < maxDistance) {
-                        const opacity = Math.pow(1 - distance / maxDistance, 2) * 
-                            Math.min(particles[i].opacity, particles[j].opacity) * 0.4;
-                        
-                        // Color based on average hue of connected particles
-                        const avgHue = (particles[i].hue + particles[j].hue) / 2;
-                        ctx.strokeStyle = `hsla(${avgHue}, 60%, 55%, ${opacity})`;
+        function updateStats(input, probs, signals) {
+            let neurons = 0, params = 0;
+            for (let l = 0; l < LAYER_SIZES.length; l++) neurons += LAYER_SIZES[l];
+            for (let l = 1; l < LAYER_SIZES.length; l++)
+                params += LAYER_SIZES[l - 1] * LAYER_SIZES[l] + LAYER_SIZES[l];
+
+            setText("arch", LAYER_SIZES.join("·"));
+            setText("neurons", neurons);
+            setText("params", params);
+            setText("epoch", epoch);
+            setText("loss", loss.toFixed(4));
+            setText("accuracy", (acc * 100).toFixed(1) + "%");
+            setText("lr", lr.toFixed(4));
+            setText("signals", signals);
+            setText("fps", Math.round(fps));
+            setText("inX", input[0].toFixed(2));
+            setText("inY", input[1].toFixed(2));
+
+            let top = 0;
+            for (let i = 1; i < probs.length; i++) if (probs[i] > probs[top]) top = i;
+            for (let i = 0; i < probs.length; i++)
+                setText("pred" + i, `c${i} ${bar(probs[i])} ${(probs[i] * 100).toFixed(0)}%`);
+            setText("predTop", `argmax → class ${top}`);
+        }
+
+        function draw() {
+            const now = performance.now();
+            fps = 1000 / (now - lastTime);
+            lastTime = now;
+            frames++;
+            flow++;
+            trainStep();
+
+            const isDark = document.documentElement.dataset.theme === "dark";
+            const nodeStroke = isDark ? "rgba(190,185,175,0.45)" : "rgba(70,67,61,0.4)";
+            const labelColor = isDark ? "rgba(190,185,175,0.55)" : "rgba(90,85,78,0.6)";
+
+            ctx.clearRect(0, 0, W, H);
+
+            const input = currentInput();
+            const probs = forward(input);
+
+            // ---- weighted edges + travelling activation signals ----
+            let signals = 0;
+            for (let l = 0; l < layers.length - 1; l++) {
+                const from = layers[l], to = layers[l + 1], w = weights[l];
+                for (let j = 0; j < to.length; j++) {
+                    for (let i = 0; i < from.length; i++) {
+                        const wt = w[j][i];
+                        const srcAct = Math.abs(from[i].act);
+                        const strength = Math.abs(wt) * (0.3 + srcAct);
+                        const aEdge = Math.min(0.5, strength * 0.5);
+                        ctx.strokeStyle = wt >= 0
+                            ? `rgba(56,142,168,${aEdge})`     // positive weight — teal
+                            : `rgba(206,103,66,${aEdge})`;    // negative weight — terracotta
+                        ctx.lineWidth = Math.min(2.2, 0.3 + Math.abs(wt) * 1.1);
                         ctx.beginPath();
-                        ctx.moveTo(particles[i].x, particles[i].y);
-                        ctx.lineTo(particles[j].x, particles[j].y);
+                        ctx.moveTo(from[i].x, from[i].y);
+                        ctx.lineTo(to[j].x, to[j].y);
+                        ctx.stroke();
+
+                        // pulse flowing along the strongly-firing connections
+                        if (strength > 0.4 && srcAct > 0.15) {
+                            signals++;
+                            const t = ((flow * 0.012) + (i * 0.13 + j * 0.07 + l * 0.21)) % 1;
+                            const px = from[i].x + (to[j].x - from[i].x) * t;
+                            const py = from[i].y + (to[j].y - from[i].y) * t;
+                            const col = wt >= 0 ? "86,196,224" : "232,140,96";
+                            ctx.beginPath();
+                            ctx.arc(px, py, 1.6 + Math.min(2.4, strength), 0, Math.PI * 2);
+                            ctx.fillStyle = `rgba(${col},${Math.min(0.9, 0.4 + strength * 0.4)})`;
+                            ctx.shadowBlur = 8;
+                            ctx.shadowColor = `rgba(${col},0.8)`;
+                            ctx.fill();
+                            ctx.shadowBlur = 0;
+                        }
+                    }
+                }
+            }
+
+            // ---- neurons ----
+            let topOut = 0;
+            for (let i = 1; i < probs.length; i++) if (probs[i] > probs[topOut]) topOut = i;
+            for (let l = 0; l < layers.length; l++) {
+                const isOut = l === layers.length - 1;
+                for (let i = 0; i < layers[l].length; i++) {
+                    const node = layers[l][i];
+                    const a = Math.min(1, Math.abs(node.act));
+                    const radius = isOut ? 9 : 7;
+
+                    if (a > 0.02) {
+                        const g = ctx.createRadialGradient(node.x, node.y, 0, node.x, node.y, radius);
+                        g.addColorStop(0, `rgba(86,196,224,${0.25 + a * 0.7})`);
+                        g.addColorStop(1, `rgba(56,142,168,${a * 0.15})`);
+                        ctx.beginPath();
+                        ctx.arc(node.x, node.y, radius, 0, Math.PI * 2);
+                        ctx.fillStyle = g;
+                        ctx.shadowBlur = 6 + a * 14;
+                        ctx.shadowColor = `rgba(86,196,224,${a * 0.7})`;
+                        ctx.fill();
+                        ctx.shadowBlur = 0;
+                    }
+
+                    ctx.beginPath();
+                    ctx.arc(node.x, node.y, radius, 0, Math.PI * 2);
+                    ctx.lineWidth = 1.4;
+                    ctx.strokeStyle = nodeStroke;
+                    ctx.stroke();
+
+                    if (isOut && i === topOut) { // ring the winning class
+                        ctx.beginPath();
+                        ctx.arc(node.x, node.y, radius + 4, 0, Math.PI * 2);
+                        ctx.lineWidth = 1.4;
+                        ctx.strokeStyle = "rgba(232,140,96,0.9)";
                         ctx.stroke();
                     }
                 }
             }
-        }
 
-        function animate() {
-            // Calculate FPS
-            const currentTime = performance.now();
-            const deltaTime = currentTime - lastTime;
-            fps = 1000 / deltaTime;
-            lastTime = currentTime;
-            frameCount++;
-
-            // Update stats
-            updateStats();
-
-            // Create trailing effect with slight color tint
-            ctx.fillStyle = "rgba(230, 242, 230, 0.12)";
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-            const scale = 4.8;
-            const centerX = canvas.width / 2;
-            const centerY = canvas.height / 2;
-
-            // Spawn new particles with slight randomness
-            if (particles.length < maxParticles && n < 1500) {
-                const r = scale * Math.sqrt(n);
-                const a = n * 137.5077640500378 * Math.PI / 180;
-                const jitter = (Math.random() - 0.5) * 2;
-                const posX = centerX + r * Math.cos(a + angle) + jitter;
-                const posY = centerY + r * Math.sin(a + angle) + jitter;
-                particles.push(new Particle(posX, posY, n));
-                n++;
+            // ---- layer captions ----
+            ctx.fillStyle = labelColor;
+            ctx.font = "11px 'Courier New', monospace";
+            ctx.textAlign = "center";
+            for (let l = 0; l < layers.length; l++) {
+                if (!layers[l].length) continue;
+                ctx.fillText(LAYER_LABELS[l] || "", layers[l][0].x, H - 16);
             }
 
-            // Draw connections first (behind particles)
-            drawConnections();
-
-            // Update and draw particles
-            for (let i = particles.length - 1; i >= 0; i--) {
-                particles[i].update();
-                particles[i].draw();
-
-                if (particles[i].isDead()) {
-                    particles.splice(i, 1);
-                }
-            }
-
-            // Rotate the spiral with slight variation
-            angle += 0.002 + Math.sin(frameCount * 0.001) * 0.0005;
-
-            requestAnimationFrame(animate);
+            updateStats(input, probs, signals);
+            requestAnimationFrame(draw);
         }
 
-        animate();
+        initNetwork();
+        resizeCanvas();
+        draw();
     </script>
 
 </body>

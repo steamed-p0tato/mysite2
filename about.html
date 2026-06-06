@@ -35,9 +35,9 @@
 
             <h2>Skills</h2>
             <ul>
-                <li>AI & ML — RAG, fine-tuning, embeddings</li>
+                <li>AI & ML   RAG, fine-tuning, embeddings</li>
                 <li>CNN/transformer hybrid architectures</li>
-                <li>Languages — Python, C for fun</li>
+                <li>Languages   Python, C for fun</li>
                 <li>ELT pipelines for custom training/RAG data</li>
                 <li>Specialized software-tool creation</li>
             </ul>
@@ -55,33 +55,33 @@
 
             <h3>AI &amp; Language Models</h3>
             <ul>
-                <li><strong>GTLM</strong> (Generative Tiny Language Model) — a Liquid Neural Network (LNN) combined with a novel continuous-time RoPE for better inference efficiency and performance (papers pending).</li>
-                <li><strong>UnChat Mini</strong> — a high-efficiency, localized document query system using advanced semantic chunking and custom vector databases.</li>
+                <li><strong>GTLM</strong> (Generative Tiny Language Model): a Liquid Neural Network (LNN) combined with a novel continuous-time RoPE for better inference efficiency and performance (papers pending).</li>
+                <li><strong>UnChat Mini</strong>: a high-efficiency, localized document query system using advanced semantic chunking and custom vector databases.</li>
             </ul>
 
             <h3>Networking &amp; Systems</h3>
             <ul>
-                <li><strong>Panictunnl</strong> (formerly Skytunnel) — an SSH-based reverse proxy for secure port forwarding and exposing local servers to the internet, managed through a minimalist TUI dashboard.</li>
-                <li><strong>Panic Monitr</strong> — a peer-to-peer system-monitoring and remote-SSH tool that bypasses strict NATs and aggressive enterprise/university firewalls to reach dev infrastructure from home.</li>
-                <li><strong>Panicfldr</strong> (formerly Skyfoldr) — a desktop file-sharing utility pairing a PyQt frontend with a Flask backend, routing data over the panictunnl network.</li>
+                <li><strong>Panictunnl</strong> (formerly Skytunnel): an SSH-based reverse proxy for secure port forwarding and exposing local servers to the internet, managed through a minimalist TUI dashboard.</li>
+                <li><strong>Panic Monitr</strong>: a peer-to-peer system-monitoring and remote-SSH tool that bypasses strict NATs and aggressive enterprise/university firewalls to reach dev infrastructure from home.</li>
+                <li><strong>Panicfldr</strong>: a desktop file-sharing utility pairing a PyQt frontend with a Flask backend, routing data over the panictunnl network.</li>
             </ul>
             <p class="note">Part of <a href="https://paniclab.tech" target="_blank" rel="noopener noreferrer">paniclab.tech</a>. The older mesh-networking service, relayp2p, has been deprecated.</p>
 
             <h3>Open Source &amp; Utilities</h3>
             <ul>
-                <li><strong>who-owes</strong> — a privacy-centric, open-source alternative to commercial group expense-tracking apps.</li>
+                <li><strong>who-owes</strong>: a privacy-centric, open-source alternative to commercial group expense-tracking apps.</li>
             </ul>
 
             <h2>Hardware, Infrastructure &amp; Lab</h2>
             <ul>
-                <li><strong>Homelabbing &amp; self-hosting</strong> — a secure, self-hosted Linux server environment for automation, service hosting, and seeding network nodes.</li>
-                <li><strong>Rapid prototyping</strong> — a Bambu Lab A1 Mini 3D printer for fabricating structural parts and custom mechanical/hardware modifications.</li>
+                <li><strong>Homelabbing &amp; self-hosting</strong>: a secure, self-hosted Linux server environment for automation, service hosting, and seeding network nodes.</li>
+                <li><strong>Rapid prototyping</strong>: a Bambu Lab A1 Mini 3D printer for fabricating structural parts and custom mechanical/hardware modifications.</li>
             </ul>
 
             <h2>Workflow &amp; Design</h2>
             <ul>
-                <li><strong>Aesthetics</strong> — strict minimalist, developer-centric design principles; a strong preference for TUIs with sharp black-and-cyan color schemes.</li>
-                <li><strong>Input efficiency</strong> — high-speed touch-typing on ThinkPad scissor-switch keyboards and Topre-style electrostatic capacitive plunger mechanisms, paired with blank keycaps.</li>
+                <li><strong>Aesthetics</strong>: strict minimalist, developer-centric design principles; a strong preference for TUIs with sharp black-and-cyan color schemes.</li>
+                <li><strong>Input efficiency</strong>: high-speed touch-typing on ThinkPad scissor-switch keyboards and Topre-style electrostatic capacitive plunger mechanisms, paired with blank keycaps.</li>
             </ul>
         </aside>
 
@@ -121,7 +121,7 @@
     </div>
 
     <script>
-        // ---- Feed-forward neural network — live forward pass + training sim ----
+        // ---- Feed-forward neural network   live forward pass + training sim ----
         const canvas = document.getElementById("netCanvas");
         const ctx = canvas.getContext("2d");
 
@@ -329,8 +329,8 @@
                         const strength = Math.abs(wt) * (0.3 + srcAct);
                         const aEdge = Math.min(0.5, strength * 0.5);
                         ctx.strokeStyle = wt >= 0
-                            ? `rgba(56,142,168,${aEdge})`     // positive weight — teal
-                            : `rgba(206,103,66,${aEdge})`;    // negative weight — terracotta
+                            ? `rgba(56,142,168,${aEdge})`     // positive weight   teal
+                            : `rgba(206,103,66,${aEdge})`;    // negative weight   terracotta
                         ctx.lineWidth = Math.min(2.2, 0.3 + Math.abs(wt) * 1.1);
                         ctx.beginPath();
                         ctx.moveTo(from[i].x, from[i].y);

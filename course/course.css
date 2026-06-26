@@ -1,0 +1,825 @@
+/* =========================================================
+   course.css — components for the LLM Fundamentals course
+   Loaded AFTER ../style.css; reuses its design tokens.
+   Only the course-specific pieces live here so the rest of
+   the site keeps a clean base stylesheet.
+   ========================================================= */
+
+/* wider measure for the interactive pages (overrides the
+   900px cap that style.css gives single-column containers) */
+.container.course {
+    max-width: 1080px;
+}
+
+.page-course .main-col {
+    width: 100%;
+}
+
+/* ---- module switcher (Architecture / Pre-Training / Post-Training) ---- */
+.module-nav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 1.5rem;
+}
+
+.module-nav a {
+    font-family: var(--sans);
+    font-size: 0.9rem;
+    color: var(--text);
+    padding: 0.5rem 1rem;
+    border: 1px solid var(--border-strong);
+    border-radius: 999px;
+    transition: background-color var(--ease), color var(--ease), border-color var(--ease);
+}
+
+.module-nav a:hover {
+    background: var(--accent-soft);
+    color: var(--accent);
+    border-color: var(--accent);
+}
+
+.module-nav a.active {
+    background: var(--ink);
+    color: var(--bg);
+    border-color: var(--ink);
+}
+
+/* ---- hero ---- */
+.course-hero {
+    margin: 1.75rem 0 1rem;
+}
+
+.course-hero .eyebrow {
+    font-family: var(--sans);
+    font-size: 0.74rem;
+    font-weight: 600;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 0.6rem;
+}
+
+.course-hero h2 {
+    font-family: var(--serif);
+    font-weight: 400;
+    font-size: clamp(2rem, 1.4rem + 3vw, 3.25rem);
+    line-height: 1.05;
+    letter-spacing: -0.02em;
+    color: var(--ink);
+    margin: 0 0 0.75rem;
+}
+
+.course-hero p {
+    font-family: var(--serif);
+    font-size: clamp(1.1rem, 1rem + 0.6vw, 1.4rem);
+    line-height: 1.5;
+    color: var(--text);
+    max-width: 60ch;
+    margin: 0;
+}
+
+/* ---- sticky in-page topic nav ---- */
+.topic-strip {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.3rem;
+    padding: 0.75rem 0;
+    margin: 1.5rem 0 0;
+    background: color-mix(in srgb, var(--bg) 88%, transparent);
+    backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--border);
+}
+
+.topic-strip a {
+    font-size: 0.8rem;
+    color: var(--muted);
+    padding: 0.3rem 0.7rem;
+    border-radius: 999px;
+    border: 1px solid transparent;
+    white-space: nowrap;
+    transition: background-color var(--ease), color var(--ease), border-color var(--ease);
+}
+
+.topic-strip a:hover {
+    background: var(--accent-soft);
+    color: var(--accent);
+}
+
+.topic-strip a.active {
+    color: var(--ink);
+    border-color: var(--border-strong);
+    background: var(--surface);
+}
+
+/* ---- topic blocks ---- */
+.topic {
+    padding: 3rem 0 1rem;
+    border-top: 1px solid var(--border);
+    scroll-margin-top: 4.5rem;
+}
+
+.topic:first-of-type {
+    border-top: none;
+}
+
+.topic-head {
+    display: flex;
+    align-items: baseline;
+    gap: 0.9rem;
+    margin-bottom: 0.4rem;
+}
+
+.topic-num {
+    flex: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 2rem;
+    height: 2rem;
+    padding: 0 0.5rem;
+    font-family: var(--mono);
+    font-size: 0.85rem;
+    color: var(--accent);
+    background: var(--accent-soft);
+    border-radius: 999px;
+}
+
+.topic h3 {
+    font-family: var(--serif);
+    font-weight: 500;
+    font-size: clamp(1.4rem, 1.1rem + 1.2vw, 2rem);
+    line-height: 1.15;
+    letter-spacing: -0.01em;
+    color: var(--ink);
+    margin: 0;
+}
+
+.topic .lead {
+    margin: 0.5rem 0 0;
+    max-width: 70ch;
+}
+
+.topic .note {
+    font-size: 0.92rem;
+    font-style: italic;
+    color: var(--muted);
+    max-width: 70ch;
+}
+
+.topic strong {
+    color: var(--ink);
+    font-weight: 600;
+}
+
+.topic code {
+    font-family: var(--mono);
+    font-size: 0.88em;
+    background: var(--accent-soft);
+    color: var(--accent);
+    padding: 0.1em 0.4em;
+    border-radius: 5px;
+}
+
+/* ---- long-form prose ---- */
+.prose {
+    max-width: 72ch;
+    margin-top: 1.1rem;
+}
+
+.prose p {
+    margin: 0 0 1rem;
+}
+
+.prose p:last-child {
+    margin-bottom: 0;
+}
+
+.prose h4 {
+    font-family: var(--sans);
+    font-size: 0.74rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin: 1.8rem 0 0.6rem;
+}
+
+.prose ul {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 1rem;
+}
+
+.prose ul li {
+    position: relative;
+    padding-left: 1.3rem;
+    margin: 0.4rem 0;
+}
+
+.prose ul li::before {
+    content: "→";
+    position: absolute;
+    left: 0;
+    color: var(--accent);
+}
+
+/* ---- key-insight callout ---- */
+.callout {
+    border-left: 3px solid var(--accent);
+    background: var(--accent-soft);
+    border-radius: 0 8px 8px 0;
+    padding: 0.85rem 1.1rem;
+    margin: 1.3rem 0;
+    max-width: 72ch;
+}
+
+.callout .callout-label {
+    display: block;
+    font-family: var(--sans);
+    font-size: 0.68rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 0.35rem;
+}
+
+.callout p {
+    margin: 0;
+    color: var(--ink);
+    font-size: 0.97rem;
+}
+
+/* ---- definition list ---- */
+.deflist {
+    margin: 1.2rem 0;
+    border-top: 1px solid var(--border);
+}
+
+.deflist .row {
+    display: grid;
+    grid-template-columns: 9rem 1fr;
+    gap: 1rem;
+    padding: 0.7rem 0;
+    border-bottom: 1px solid var(--border);
+}
+
+.deflist .term {
+    font-family: var(--mono);
+    font-size: 0.85rem;
+    color: var(--accent);
+}
+
+.deflist .def {
+    font-size: 0.95rem;
+    color: var(--text);
+}
+
+/* ---- timeline (case studies) ---- */
+.timeline {
+    margin: 1.4rem 0;
+    padding-left: 1.2rem;
+    border-left: 2px solid var(--border-strong);
+}
+
+.timeline .event {
+    position: relative;
+    padding: 0 0 1.4rem 1.2rem;
+}
+
+.timeline .event::before {
+    content: "";
+    position: absolute;
+    left: calc(-1.2rem - 6px);
+    top: 6px;
+    width: 11px;
+    height: 11px;
+    border-radius: 50%;
+    background: var(--surface);
+    border: 2px solid var(--accent);
+}
+
+.timeline .event:last-child {
+    padding-bottom: 0;
+}
+
+.timeline .when {
+    font-family: var(--mono);
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    color: var(--accent);
+    text-transform: uppercase;
+}
+
+.timeline .what {
+    margin: 0.2rem 0 0;
+    font-size: 0.97rem;
+}
+
+.timeline .what strong {
+    color: var(--ink);
+}
+
+.casestudy .viz {
+    margin-top: 1.6rem;
+}
+
+.subhead {
+    font-family: var(--serif);
+    font-weight: 500;
+    font-size: 1.15rem;
+    color: var(--ink);
+    margin: 2rem 0 0.4rem;
+}
+
+/* ---- visualization shell ---- */
+.viz {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: clamp(1rem, 3vw, 1.6rem);
+    margin-top: 1.4rem;
+}
+
+.viz-title {
+    font-family: var(--sans);
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 0 0 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.viz-title::before {
+    content: "";
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--accent);
+}
+
+/* ---- controls ---- */
+.controls {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 1rem 1.4rem;
+    margin: 0.25rem 0 1.2rem;
+}
+
+.control {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+    min-width: 0;
+}
+
+.control > label {
+    font-family: var(--sans);
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+}
+
+.control output,
+.control .val {
+    font-family: var(--mono);
+    font-size: 0.85rem;
+    color: var(--accent);
+}
+
+input[type="range"] {
+    width: 190px;
+    max-width: 60vw;
+    accent-color: var(--accent);
+    cursor: pointer;
+}
+
+.viz input[type="text"],
+.viz textarea,
+.viz select {
+    font-family: var(--sans);
+    font-size: 0.95rem;
+    color: var(--ink);
+    background: var(--bg);
+    border: 1px solid var(--border-strong);
+    border-radius: 8px;
+    padding: 0.55rem 0.7rem;
+    width: 100%;
+    transition: border-color var(--ease);
+}
+
+.viz textarea {
+    resize: vertical;
+    line-height: 1.5;
+}
+
+.viz input[type="text"]:focus,
+.viz textarea:focus,
+.viz select:focus {
+    outline: none;
+    border-color: var(--accent);
+}
+
+.btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-family: var(--sans);
+    font-size: 0.9rem;
+    color: var(--ink);
+    background: transparent;
+    border: 1px solid var(--border-strong);
+    border-radius: 999px;
+    padding: 0.5rem 1.1rem;
+    cursor: pointer;
+    transition: background-color var(--ease), color var(--ease), border-color var(--ease);
+}
+
+.btn:hover {
+    background: var(--ink);
+    color: var(--bg);
+    border-color: var(--ink);
+}
+
+.btn.accent {
+    border-color: var(--accent);
+    color: var(--accent);
+}
+
+.btn.accent:hover {
+    background: var(--accent);
+    color: #fff;
+}
+
+/* ---- toggle pills ---- */
+.pill-group {
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+}
+
+.pill {
+    font-family: var(--sans);
+    font-size: 0.85rem;
+    color: var(--text);
+    background: var(--bg);
+    border: 1px solid var(--border-strong);
+    border-radius: 999px;
+    padding: 0.4rem 0.9rem;
+    cursor: pointer;
+    transition: all var(--ease);
+}
+
+.pill:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+}
+
+.pill.on {
+    background: var(--accent);
+    color: #fff;
+    border-color: var(--accent);
+}
+
+/* ---- canvas inside viz (reset the about-page absolute rule) ---- */
+.viz canvas {
+    position: static;
+    inset: auto;
+    width: 100%;
+    height: auto;
+    display: block;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    cursor: default;
+}
+
+/* ---- token chips ---- */
+.tokens {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.3rem;
+    margin-top: 0.5rem;
+}
+
+.token-chip {
+    font-family: var(--mono);
+    font-size: 0.85rem;
+    color: var(--ink);
+    background: var(--accent-soft);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 0.15rem 0.45rem;
+    white-space: pre;
+}
+
+.token-chip small {
+    color: var(--muted);
+    font-size: 0.7em;
+    margin-left: 0.25rem;
+}
+
+/* ---- diagram boxes / flow ---- */
+.flow {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.flow-box {
+    flex: 1 1 0;
+    min-width: 92px;
+    text-align: center;
+    font-family: var(--sans);
+    font-size: 0.82rem;
+    color: var(--ink);
+    background: var(--bg);
+    border: 1px solid var(--border-strong);
+    border-radius: 8px;
+    padding: 0.7rem 0.5rem;
+    cursor: pointer;
+    transition: all var(--ease);
+}
+
+.flow-box small {
+    display: block;
+    color: var(--muted);
+    font-size: 0.7rem;
+    margin-top: 0.2rem;
+}
+
+.flow-box:hover,
+.flow-box.on {
+    border-color: var(--accent);
+    background: var(--accent-soft);
+}
+
+.flow-arrow {
+    color: var(--muted);
+    font-size: 1.1rem;
+    flex: none;
+}
+
+/* ---- bar chart rows ---- */
+.bars {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.bar-row {
+    display: grid;
+    grid-template-columns: 7.5rem 1fr auto;
+    align-items: center;
+    gap: 0.6rem;
+    font-size: 0.85rem;
+}
+
+.bar-row .bar-label {
+    font-family: var(--mono);
+    color: var(--text);
+    text-align: right;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.bar-track {
+    height: 14px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    overflow: hidden;
+}
+
+.bar-fill {
+    height: 100%;
+    background: var(--accent);
+    border-radius: 999px;
+    transition: width 0.3s ease;
+}
+
+.bar-row .bar-val {
+    font-family: var(--mono);
+    font-size: 0.8rem;
+    color: var(--muted);
+    min-width: 3.5rem;
+    text-align: right;
+}
+
+/* ---- metric / key-value cards ---- */
+.kv-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+    gap: 0.8rem;
+    margin-top: 1rem;
+}
+
+.kv-card {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.8rem 0.9rem;
+}
+
+.kv-card .k {
+    font-family: var(--sans);
+    font-size: 0.68rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 0.3rem;
+}
+
+.kv-card .v {
+    font-family: var(--serif);
+    font-size: 1.5rem;
+    color: var(--ink);
+    line-height: 1;
+}
+
+.kv-card .v small {
+    font-family: var(--sans);
+    font-size: 0.7rem;
+    color: var(--muted);
+}
+
+/* ---- readout line ---- */
+.readout {
+    font-family: var(--mono);
+    font-size: 0.85rem;
+    color: var(--text);
+    background: var(--bg);
+    border: 1px dashed var(--border-strong);
+    border-radius: 8px;
+    padding: 0.7rem 0.9rem;
+    margin-top: 1rem;
+    line-height: 1.6;
+}
+
+.readout b {
+    color: var(--accent);
+}
+
+/* ---- two-column viz body ---- */
+.viz-cols {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.2rem;
+    align-items: start;
+}
+
+.tag {
+    display: inline-block;
+    font-family: var(--sans);
+    font-size: 0.68rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--accent);
+    background: var(--accent-soft);
+    border-radius: 5px;
+    padding: 0.12rem 0.45rem;
+    margin-bottom: 0.4rem;
+}
+
+/* ---- course syllabus landing ---- */
+.syllabus {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--gap);
+    margin-top: 2rem;
+}
+
+.syllabus .col {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1.4rem 1.3rem;
+    transition: border-color var(--ease);
+}
+
+.syllabus .col:hover {
+    border-color: var(--border-strong);
+}
+
+.syllabus .col-num {
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    color: var(--accent);
+    letter-spacing: 0.1em;
+}
+
+.syllabus .col h3 {
+    font-family: var(--serif);
+    font-weight: 500;
+    font-size: 1.5rem;
+    color: var(--ink);
+    margin: 0.3rem 0 0.2rem;
+}
+
+.syllabus .col h3 a {
+    color: var(--ink);
+    transition: color var(--ease);
+}
+
+.syllabus .col h3 a:hover {
+    color: var(--accent);
+}
+
+.syllabus .col .count {
+    font-family: var(--sans);
+    font-size: 0.72rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+}
+
+.syllabus .col ol {
+    list-style: none;
+    counter-reset: t;
+    padding: 0;
+    margin: 1rem 0 1.2rem;
+}
+
+.syllabus .col ol li {
+    counter-increment: t;
+    position: relative;
+    padding: 0.35rem 0 0.35rem 1.8rem;
+    font-size: 0.92rem;
+    border-bottom: 1px dotted var(--border);
+}
+
+.syllabus .col ol li:last-child {
+    border-bottom: none;
+}
+
+.syllabus .col ol li::before {
+    content: counter(t, decimal-leading-zero);
+    position: absolute;
+    left: 0;
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    color: var(--muted);
+}
+
+.syllabus .col .enter {
+    display: inline-block;
+    font-family: var(--sans);
+    font-size: 0.85rem;
+    color: var(--ink);
+    border: 1px solid var(--border-strong);
+    border-radius: 999px;
+    padding: 0.45rem 1.1rem;
+    transition: background-color var(--ease), color var(--ease), border-color var(--ease);
+}
+
+.syllabus .col .enter:hover {
+    background: var(--ink);
+    color: var(--bg);
+    border-color: var(--ink);
+}
+
+footer.foot {
+    grid-column: 1 / -1;
+    margin-top: 3rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--border);
+    font-size: 0.85rem;
+    color: var(--muted);
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+/* ---- responsive ---- */
+@media (max-width: 860px) {
+    .syllabus {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 760px) {
+    .viz-cols {
+        grid-template-columns: 1fr;
+    }
+
+    .bar-row {
+        grid-template-columns: 5.5rem 1fr auto;
+    }
+}

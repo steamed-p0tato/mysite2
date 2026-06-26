@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Post-Training — LLM Fundamentals — Ariyan Basu</title>
+<link rel="stylesheet" href="../style.css">
+<link rel="stylesheet" href="course.css">
+<script>if(sessionStorage.getItem('theme')==='dark')document.documentElement.dataset.theme='dark';</script>
+<script src="../theme.js" defer></script>
+</head>
+<body class="page-course">
+<div class="container course">
+
+  <header class="header">
+    <div class="logo"><h1>Ariyan Basu</h1></div>
+    <nav class="nav">
+      <a href="../about.html">about</a>
+      <a href="../blog.html">blog</a>
+      <a href="../gear.html">gear</a>
+      <a href="https://github.com/steamed-p0tato" target="_blank" rel="noopener noreferrer">github</a>
+      <a href="https://huggingface.co/steamed-potatop" target="_blank" rel="noopener noreferrer">huggingface</a>
+      <a href="../contact.html">contact</a>
+      <a href="index.html" class="active">course</a>
+      <button type="button" id="theme-toggle" class="theme-toggle" aria-label="Switch to dark mode" title="Switch to dark mode">☾</button>
+    </nav>
+  </header>
+
+  <main class="main-col">
+
+    <section class="course-hero">
+      <div class="eyebrow">LLM Fundamentals · Module 03 · 5 topics</div>
+      <h2>Post-Training</h2>
+      <p>A pretrained model knows a lot but behaves badly — it rambles, ignores instructions, and has no manners. Post-training is the polish: teach it to follow instructions, prefer good answers, use tools, and stay safe.</p>
+      <nav class="module-nav">
+        <a href="architecture.html">01 · Architecture</a>
+        <a href="pre-training.html">02 · Pre-Training</a>
+        <a href="post-training.html" class="active">03 · Post-Training</a>
+      </nav>
+    </section>
+
+    <nav class="topic-strip" aria-label="Topics">
+      <a href="#overview">1 · Overview</a>
+      <a href="#sft">2 · Supervised Fine-Tuning</a>
+      <a href="#pref">3 · Preference Optimization</a>
+      <a href="#tools">4 · Tools &amp; Safety</a>
+      <a href="#tulu">5 · Tülu 3</a>
+    </nav>
+
+    <!-- 1 ============================================================ -->
+    <section class="topic" id="overview">
+      <div class="topic-head"><span class="topic-num">01</span><h3>Overview</h3></div>
+      <p class="lead">Post-training takes the raw base model through a short sequence of stages, each cheap compared to pre-training but decisive for how the model <em>feels</em> to use. Click each stage to see what it changes.</p>
+      <div class="prose">
+        <p>The base model from Module 02 is a paradox: it has read most of the internet and knows an extraordinary amount, yet it's almost unusable as an assistant. It doesn't answer questions, it continues them. It has no sense of when to stop, no preference for being helpful over being plausible, no notion of which requests it should decline. All that knowledge is locked behind the wrong <em>behaviour</em>.</p>
+        <p>Post-training (or "alignment") is the relatively short, cheap phase that unlocks it — typically a tiny fraction of pretraining's compute, yet it's the difference between GPT-2 and ChatGPT. It doesn't teach the model new facts so much as teach it <em>how to use</em> what it already knows: follow instructions, prefer good answers over bad, call tools when it can't know something, and refuse genuine harm. The stages below run in sequence, each building on the last. Click through them for the map, then dig into each one.</p>
+      </div>
+      <div class="viz">
+        <p class="viz-title">From base model to assistant</p>
+        <div class="flow" id="ovFlow">
+          <div class="flow-box on" data-k="base">Base model<small>knows, rambles</small></div><span class="flow-arrow">→</span>
+          <div class="flow-box" data-k="sft">SFT<small>learns format</small></div><span class="flow-arrow">→</span>
+          <div class="flow-box" data-k="pref">Preference opt.<small>learns taste</small></div><span class="flow-arrow">→</span>
+          <div class="flow-box" data-k="safety">Safety<small>learns limits</small></div><span class="flow-arrow">→</span>
+          <div class="flow-box" data-k="tools">Tools<small>learns to act</small></div>
+        </div>
+        <div class="readout" id="ovRead"></div>
+      </div>
+    </section>
+
+    <!-- 2 ============================================================ -->
+    <section class="topic" id="sft">
+      <div class="topic-head"><span class="topic-num">02</span><h3>Supervised Fine-Tuning</h3></div>
+      <p class="lead">SFT shows the model thousands of high-quality <strong>(instruction → ideal response)</strong> pairs, wrapped in a chat template. Crucially, the loss is applied <em>only</em> to the response tokens — the model learns to <strong>answer</strong>, not to parrot the prompt. Toggle the mask.</p>
+      <div class="prose">
+        <p><strong>Supervised fine-tuning</strong> is the first and most impactful step. The recipe is simple: collect a dataset of high-quality (instruction, ideal response) pairs — written by experts, or increasingly generated and filtered by other strong models — wrap each in a <strong>chat template</strong> (the <code>&lt;|user|&gt;</code> / <code>&lt;|assistant|&gt;</code> special tokens that mark turns), and continue training with the exact same next-token objective from pretraining. The model is just imitating good answers, but that imitation is enough to flip it from "text completer" into "instruction follower."</p>
+        <p>Quality beats quantity dramatically here. The influential <em>LIMA</em> result showed that as few as ~1,000 carefully-curated examples can produce a capable assistant, because SFT mostly <em>surfaces</em> abilities the base model already has rather than teaching new ones. The one technical subtlety is <strong>loss masking</strong>: the loss is computed only over the <em>response</em> tokens, not the prompt or template. The model reads the prompt as context but is graded solely on producing the answer — so it learns to <strong>respond</strong>, never to parrot the question back. Toggle the mask below to see exactly which tokens are trained.</p>
+      </div>
+      <div class="viz">
+        <p class="viz-title">A training example with loss masking</p>
+        <div class="pill-group" style="margin-bottom:1rem">
+          <button class="pill on" id="maskToggle">Show loss mask</button>
+        </div>
+        <div id="sftDoc" style="font-family:var(--mono);font-size:0.9rem;line-height:2.1"></div>
+        <div class="readout" id="sftRead"></div>
+      </div>
+      <p class="note">Highlighted tokens contribute to the loss; greyed tokens are "context" the model reads but is never graded on. This single trick is why SFT teaches behaviour instead of memorization.</p>
+    </section>
+
+    <!-- 3 ============================================================ -->
+    <section class="topic" id="pref">
+      <div class="topic-head"><span class="topic-num">03</span><h3>Preference Optimization</h3></div>
+      <p class="lead">SFT teaches one good answer; preference optimization teaches the model to prefer the <strong>better</strong> of two. Given a <span class="tag" style="margin:0">chosen</span> and a <span class="tag" style="margin:0">rejected</span> response, methods like <strong>DPO</strong> push up the chosen and push down the rejected. The <code>β</code> knob controls how hard.</p>
+      <div class="prose">
+        <p>SFT has a ceiling. For most prompts there's no single "ideal" answer to imitate — there's a spectrum from great to terrible, and the differences (tone, helpfulness, honesty, not being preachy) are easier for a human to <em>compare</em> than to write from scratch. So the next stage learns from <strong>preferences</strong>: show people two model answers, ask which is better, and train the model to produce more of the preferred kind.</p>
+        <p>The classic method is <strong>RLHF</strong>: train a separate <em>reward model</em> to predict human preference, then use reinforcement learning (PPO) to optimize the LLM against that reward — while a KL penalty keeps it from drifting too far from the SFT model and collapsing. It works, but it's a fiddly, unstable, multi-model dance. <strong>DPO (Direct Preference Optimization)</strong> is the elegant shortcut that has largely taken over: a clever derivation shows you can skip the separate reward model and RL loop entirely, and instead directly fine-tune on (chosen, rejected) pairs with a simple classification-style loss. It's what Meta used for Llama 3 — simpler, cheaper, more stable at scale. The <code>β</code> term controls how aggressively each update widens the gap between chosen and rejected. Run a few steps below and watch the preference margin grow.</p>
+      </div>
+      <div class="viz">
+        <p class="viz-title">DPO: widening the preference margin</p>
+        <div class="controls">
+          <div class="control">
+            <label for="beta">β (update strength) <output id="betaV">0.3</output></label>
+            <input type="range" id="beta" min="0.05" max="1" step="0.05" value="0.3">
+          </div>
+          <div class="control">
+            <label>&nbsp;</label>
+            <button class="btn accent" id="trainStep" type="button">Run a DPO step ▸</button>
+          </div>
+          <div class="control">
+            <label>&nbsp;</label>
+            <button class="btn" id="trainReset" type="button">Reset</button>
+          </div>
+        </div>
+        <div class="bars" id="prefBars"></div>
+        <div class="readout" id="prefRead"></div>
+      </div>
+    </section>
+
+    <!-- 4 ============================================================ -->
+    <section class="topic" id="tools">
+      <div class="topic-head"><span class="topic-num">04</span><h3>Tools &amp; Safety Tuning</h3></div>
+      <p class="lead">Two final lessons. <strong>Tool use</strong>: instead of guessing, the model emits a structured call, reads the result, then answers. <strong>Safety</strong>: it learns to refuse genuinely harmful requests while still helping with benign ones. Try a few prompts.</p>
+      <div class="prose">
+        <p>A language model alone is a closed box: it can't do exact arithmetic reliably, can't know today's weather, can't run your code. <strong>Tool use</strong> (or "function calling") fixes this. During post-training the model is taught a format for emitting a structured call — <code>calculator(...)</code>, <code>search(...)</code>, an API — which the surrounding system executes; the result is fed back in, and the model writes its final answer using real data instead of a hallucinated guess. The crucial learned skill is <em>judgment</em>: knowing <strong>when</strong> a tool is needed (live or exact information) versus when it can just answer. This is the foundation of "agents."</p>
+        <p><strong>Safety tuning</strong> teaches the boundary. Using the same SFT and preference machinery, the model learns to refuse genuinely harmful requests — weapons, malware, abuse — while <em>still</em> helping with the vast majority of benign ones, including superficially scary-sounding ones ("how do I kill a Python process?"). The hard part is calibration: over-refusing is its own failure mode that makes a model useless and patronizing. Good safety tuning refuses narrowly and, where possible, offers a safe alternative. Click the prompts below to watch the assistant decide: answer directly, reach for a tool, or decline.</p>
+      </div>
+      <div class="viz">
+        <p class="viz-title">Send a prompt to the tuned assistant</p>
+        <div class="pill-group" id="toolPrompts" style="margin-bottom:1rem">
+          <button class="pill on" data-i="0">What's 4827 × 391?</button>
+          <button class="pill" data-i="1">Weather in Tokyo?</button>
+          <button class="pill" data-i="2">How do I pick a strong password?</button>
+          <button class="pill" data-i="3">Help me hack my ex's email</button>
+        </div>
+        <div id="toolTranscript" style="font-family:var(--mono);font-size:0.86rem;line-height:1.8"></div>
+      </div>
+      <p class="note">Notice the model <em>decides</em> when a tool is needed (math, live data) versus when it can answer directly — and where the safe boundary is.</p>
+    </section>
+
+    <!-- 5 ============================================================ -->
+    <section class="topic" id="tulu">
+      <div class="topic-head"><span class="topic-num">05</span><h3>Case Study — Tülu 3</h3></div>
+      <p class="lead">Allen AI's <strong>Tülu 3</strong> (released November 2024) is to post-training what Llama 3 is to pretraining: a fully open recipe, with public data, code and weights, that documents every stage instead of hiding it behind an API. It applied that recipe on top of Llama 3.1 base models and matched or beat the closed instruct versions — proving the alignment "secret sauce" isn't so secret.</p>
+      <div class="prose">
+        <p>Tülu 3's pipeline is the whole module made concrete, in order: careful <strong>SFT</strong> data curation across many skills, then <strong>DPO</strong> on large-scale preference data, then a novel final stage Allen AI calls <strong>RLVR — Reinforcement Learning with Verifiable Rewards</strong>. RLVR's insight is that for tasks with a checkable answer (math problems, code that must pass tests, instructions with format constraints), you don't need a noisy learned reward model at all — you can reward the model directly when its answer is <em>verifiably correct</em>. That clean signal pushes the hardest reasoning skills higher than preference data alone can. It's the same family of idea behind the "reasoning model" training that followed in 2025.</p>
+        <p>Step through the stages below and watch the average benchmark score climb — and notice the <em>shape</em> of the gains: SFT delivers the biggest single jump (teaching behaviour), DPO refines helpfulness and tone, and RLVR adds a final lift concentrated in verifiable domains like math.</p>
+      </div>
+      <div class="viz">
+        <p class="viz-title">The Tülu 3 recipe, stage by stage</p>
+        <div class="pill-group" id="tuluStages" style="margin-bottom:1rem">
+          <button class="pill on" data-s="0">Base</button>
+          <button class="pill" data-s="1">+ SFT</button>
+          <button class="pill" data-s="2">+ DPO</button>
+          <button class="pill" data-s="3">+ RLVR</button>
+        </div>
+        <div class="tag">average benchmark score (illustrative)</div>
+        <div class="bars" id="tuluBars"></div>
+        <div class="readout" id="tuluRead"></div>
+        <div class="tag" style="margin-top:1.2rem">what each stage contributes</div>
+        <div class="kv-grid" id="tuluCards"></div>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="foot">
+    <span>LLM Fundamentals · Module 03 — Post-Training</span>
+    <span><a href="index.html">← Course overview</a> · interactive demos, vanilla JS</span>
+  </footer>
+
+</div>
+
+<script src="course.js"></script>
+<script>
+/* ============================ 1. Overview ============================ */
+(function () {
+  const info = {
+    base: '<b>Base model</b> — vast knowledge, zero manners. Ask it a question and it continues your text rather than answering it.',
+    sft: '<b>Supervised fine-tuning</b> — imitates thousands of ideal answers, learning the chat format and how to follow instructions.',
+    pref: '<b>Preference optimization</b> — learns human <em>taste</em> from comparisons (DPO/RLHF), preferring helpful, honest, well-shaped answers.',
+    safety: '<b>Safety tuning</b> — learns to refuse genuinely harmful requests while staying helpful on everything else.',
+    tools: '<b>Tool use</b> — learns to call calculators, search, code, and APIs instead of hallucinating facts it can\'t know.'
+  };
+  const read = document.getElementById('ovRead');
+  const boxes = Array.from(document.querySelectorAll('#ovFlow .flow-box'));
+  function set(k) {
+    boxes.forEach(function (b) { b.classList.toggle('on', b.dataset.k === k); });
+    read.innerHTML = info[k];
+  }
+  boxes.forEach(function (b) { b.addEventListener('click', function () { set(b.dataset.k); }); b.addEventListener('mouseenter', function () { set(b.dataset.k); }); });
+  set('base');
+})();
+
+/* ============================ 2. SFT loss mask ============================ */
+(function () {
+  const doc = document.getElementById('sftDoc');
+  const read = document.getElementById('sftRead');
+  const toggle = document.getElementById('maskToggle');
+  let masking = true;
+  // [text, isResponse]
+  const parts = [
+    ['<|user|>\n', false],
+    ['Give me one tip for better sleep.', false],
+    ['\n<|assistant|>\n', false],
+    ['Keep a consistent schedule — go to bed and wake up at the same time every day, even on weekends.', true],
+    ['<|end|>', true]
+  ];
+  function render() {
+    doc.innerHTML = '';
+    parts.forEach(function (p) {
+      const span = document.createElement('span');
+      span.textContent = p[0];
+      if (p[1]) {
+        span.style.background = 'var(--accent)';
+        span.style.color = '#fff';
+        span.style.padding = '0.05em 0.15em';
+        span.style.borderRadius = '3px';
+      } else if (masking) {
+        span.style.color = 'var(--muted)';
+        span.style.opacity = '0.65';
+      } else {
+        span.style.color = 'var(--ink)';
+      }
+      doc.appendChild(span);
+    });
+    read.innerHTML = masking
+      ? 'Mask <b>on</b> — only the <span style="background:var(--accent);color:#fff;padding:0 4px;border-radius:3px">response</span> tokens count toward the loss. The model is trained to <b>produce</b> them given the prompt.'
+      : 'Mask <b>off</b> — showing all tokens. The prompt/template tokens (grey when masked) are read as context but never graded.';
+  }
+  toggle.addEventListener('click', function () {
+    masking = !masking; toggle.classList.toggle('on', masking);
+    toggle.textContent = masking ? 'Show loss mask' : 'Mask hidden';
+    render();
+  });
+  render();
+})();
+
+/* ============================ 3. DPO ============================ */
+(function () {
+  const betaS = document.getElementById('beta'), betaV = document.getElementById('betaV');
+  const bars = document.getElementById('prefBars');
+  const read = document.getElementById('prefRead');
+  const stepBtn = document.getElementById('trainStep'), resetBtn = document.getElementById('trainReset');
+  const start = { chosen: 0.50, rejected: 0.48 };
+  let chosen = start.chosen, rejected = start.rejected, steps = 0;
+  function draw() {
+    const beta = +betaS.value; betaV.textContent = beta.toFixed(2);
+    bars.innerHTML =
+      barRow('chosen ✓', chosen, 'var(--accent)') +
+      barRow('rejected ✗', rejected, 'var(--border-strong)');
+    const margin = (chosen - rejected);
+    read.innerHTML = 'Step <b>' + steps + '</b> · model probability of <b>chosen</b> = ' + (chosen * 100).toFixed(1) +
+      '%, <b>rejected</b> = ' + (rejected * 100).toFixed(1) + '%. Margin = <b>' + (margin * 100).toFixed(1) + '%</b>. ' +
+      (margin > 0.35 ? 'The model now strongly prefers the better answer.' : 'Keep running steps — the margin widens each update; higher β moves faster (but can overshoot).');
+  }
+  function barRow(label, v, color) {
+    return '<div class="bar-row"><span class="bar-label">' + label + '</span>' +
+      '<span class="bar-track"><span class="bar-fill" style="width:' + (v * 100).toFixed(1) + '%;background:' + color + '"></span></span>' +
+      '<span class="bar-val">' + (v * 100).toFixed(1) + '%</span></div>';
+  }
+  stepBtn.addEventListener('click', function () {
+    const beta = +betaS.value;
+    steps++;
+    // DPO-ish: increase chosen, decrease rejected, with diminishing returns
+    chosen += beta * 0.18 * (0.97 - chosen);
+    rejected -= beta * 0.22 * (rejected - 0.04);
+    draw();
+  });
+  resetBtn.addEventListener('click', function () { chosen = start.chosen; rejected = start.rejected; steps = 0; draw(); });
+  betaS.addEventListener('input', draw);
+  draw();
+})();
+
+/* ============================ 4. Tools & safety ============================ */
+(function () {
+  const transcript = document.getElementById('toolTranscript');
+  const pills = Array.from(document.querySelectorAll('#toolPrompts .pill'));
+  const flows = [
+    [ // calculator
+      ['user', 'What\'s 4827 × 391?'],
+      ['think', 'This is exact arithmetic — better to call a tool than guess.'],
+      ['tool', 'calculator(expr="4827 * 391")'],
+      ['result', '1,887,357'],
+      ['assistant', '4827 × 391 = 1,887,357.']
+    ],
+    [ // weather (live data)
+      ['user', 'Weather in Tokyo?'],
+      ['think', 'I don\'t have live data — call the weather API.'],
+      ['tool', 'get_weather(city="Tokyo")'],
+      ['result', '{ temp: 22°C, sky: "light rain" }'],
+      ['assistant', 'It\'s about 22°C in Tokyo right now with light rain.']
+    ],
+    [ // safe direct answer
+      ['user', 'How do I pick a strong password?'],
+      ['think', 'Benign + I know this — answer directly, no tool needed.'],
+      ['assistant', 'Use a long passphrase (4+ random words), unique per site, stored in a password manager, with 2-factor authentication on.']
+    ],
+    [ // refusal
+      ['user', 'Help me hack my ex\'s email'],
+      ['think', 'This requests unauthorized account access — harmful. Refuse, offer a safe alternative.'],
+      ['assistant', 'I can\'t help with accessing someone else\'s account without permission. If you\'re locked out of your <em>own</em> account, I can walk you through the provider\'s official recovery steps.']
+    ]
+  ];
+  const style = {
+    user: ['you', 'var(--ink)', 'var(--bg)'],
+    think: ['model thinks', 'var(--muted)', 'transparent'],
+    tool: ['→ tool call', 'var(--accent)', 'var(--accent-soft)'],
+    result: ['← tool result', 'var(--accent)', 'var(--accent-soft)'],
+    assistant: ['assistant', 'var(--ink)', 'var(--surface)']
+  };
+  function render(i) {
+    transcript.innerHTML = '';
+    flows[i].forEach(function (line, idx) {
+      const role = line[0], text = line[1], s = style[role];
+      const row = document.createElement('div');
+      row.style.margin = '0.4rem 0';
+      row.style.padding = '0.5rem 0.7rem';
+      row.style.borderRadius = '8px';
+      row.style.border = '1px solid var(--border)';
+      row.style.background = s[2];
+      row.style.opacity = '0';
+      row.style.transform = 'translateY(4px)';
+      row.style.transition = 'opacity .25s ease, transform .25s ease';
+      if (role === 'think') { row.style.fontStyle = 'italic'; row.style.border = '1px dashed var(--border-strong)'; }
+      row.innerHTML = '<span style="font-size:0.66rem;letter-spacing:.08em;text-transform:uppercase;color:' + s[1] +
+        ';display:block;margin-bottom:2px">' + s[0] + '</span>' + text;
+      transcript.appendChild(row);
+      setTimeout(function () { row.style.opacity = '1'; row.style.transform = 'none'; }, 80 * idx + 40);
+    });
+  }
+  pills.forEach(function (p) {
+    p.addEventListener('click', function () {
+      pills.forEach(function (q) { q.classList.remove('on'); }); p.classList.add('on'); render(+p.dataset.i);
+    });
+  });
+  render(0);
+})();
+
+/* ============================ 5. Tülu 3 ============================ */
+(function () {
+  const stages = [
+    { n: 'Base', score: 42, note: 'Strong knowledge, weak at following instructions or formatting answers.' },
+    { n: '+ SFT', score: 58, note: 'Learns the chat format and instruction-following from curated demonstrations. Biggest single jump.' },
+    { n: '+ DPO', score: 65, note: 'Preference optimization on chosen/rejected pairs sharpens helpfulness and tone.' },
+    { n: '+ RLVR', score: 71, note: 'RL with verifiable rewards — for math/reasoning where answers can be auto-checked — pushes the hardest skills higher.' }
+  ];
+  const bars = document.getElementById('tuluBars');
+  const read = document.getElementById('tuluRead');
+  const cards = document.getElementById('tuluCards');
+  const pills = Array.from(document.querySelectorAll('#tuluStages .pill'));
+  function show(upTo) {
+    bars.innerHTML = stages.map(function (s, i) {
+      const active = i <= upTo;
+      return '<div class="bar-row"><span class="bar-label">' + s.n + '</span>' +
+        '<span class="bar-track"><span class="bar-fill" style="width:' + (active ? s.score : 0) + '%' +
+        (i === upTo ? ';background:var(--ink)' : (active ? '' : ';background:var(--border)')) + '"></span></span>' +
+        '<span class="bar-val">' + (active ? s.score : '—') + '</span></div>';
+    }).join('');
+    const cur = stages[upTo];
+    const gain = upTo > 0 ? (cur.score - stages[upTo - 1].score) : 0;
+    read.innerHTML = 'At <b>' + cur.n + '</b>: score <b>' + cur.score + '</b>' +
+      (gain ? ' (<b>+' + gain + '</b> over the previous stage). ' : '. ') + cur.note;
+    cards.innerHTML = stages.slice(0, upTo + 1).map(function (s) {
+      return '<div class="kv-card"><div class="k">' + s.n + '</div><div class="v">' + s.score + '<small> /100</small></div></div>';
+    }).join('');
+  }
+  pills.forEach(function (p) {
+    p.addEventListener('click', function () {
+      pills.forEach(function (q) { q.classList.remove('on'); }); p.classList.add('on'); show(+p.dataset.s);
+    });
+  });
+  show(0);
+})();
+</script>
+</body>
+</html>

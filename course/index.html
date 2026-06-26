@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LLM Fundamentals — Ariyan Basu</title>
+<link rel="stylesheet" href="../style.css">
+<link rel="stylesheet" href="course.css">
+<script>if(sessionStorage.getItem('theme')==='dark')document.documentElement.dataset.theme='dark';</script>
+<script src="../theme.js" defer></script>
+</head>
+<body class="page-course">
+<div class="container course">
+
+  <header class="header">
+    <div class="logo"><h1>Ariyan Basu</h1></div>
+    <nav class="nav">
+      <a href="../about.html">about</a>
+      <a href="../blog.html">blog</a>
+      <a href="../gear.html">gear</a>
+      <a href="https://github.com/steamed-p0tato" target="_blank" rel="noopener noreferrer">github</a>
+      <a href="https://huggingface.co/steamed-potatop" target="_blank" rel="noopener noreferrer">huggingface</a>
+      <a href="../contact.html">contact</a>
+      <a href="index.html" class="active">course</a>
+      <button type="button" id="theme-toggle" class="theme-toggle" aria-label="Switch to dark mode" title="Switch to dark mode">☾</button>
+    </nav>
+  </header>
+
+  <main class="main-col">
+
+    <section class="course-hero">
+      <div class="eyebrow">A free, interactive course</div>
+      <h2>LLM Fundamentals</h2>
+      <p>How a large language model is actually built — from a string of text to an aligned assistant — explained in three modules, every concept paired with a visualization you can poke. No frameworks, no maths wall, no hand-waving.</p>
+    </section>
+
+    <div class="syllabus">
+
+      <div class="col">
+        <div class="col-num">MODULE 01</div>
+        <h3><a href="architecture.html">Architecture</a></h3>
+        <div class="count">9 topics</div>
+        <ol>
+          <li>Introduction</li>
+          <li>Tokenization</li>
+          <li>The Embedding Layer</li>
+          <li>Positional Encoding</li>
+          <li>Attention</li>
+          <li>Layers of Understanding</li>
+          <li>Learning to Predict</li>
+          <li>Instruction Tuning &amp; RLHF</li>
+          <li>Case Study — GPT-2 from Scratch</li>
+        </ol>
+        <a href="architecture.html" class="enter">Start module →</a>
+      </div>
+
+      <div class="col">
+        <div class="col-num">MODULE 02</div>
+        <h3><a href="pre-training.html">Pre-Training</a></h3>
+        <div class="count">8 topics</div>
+        <ol>
+          <li>Overview</li>
+          <li>Training Objectives &amp; Details</li>
+          <li>Scaling Laws &amp; Optimization</li>
+          <li>Training Data Engineering</li>
+          <li>Infrastructure &amp; Systems</li>
+          <li>Advanced Pretraining Objectives</li>
+          <li>Evaluation During Pretraining</li>
+          <li>Case Study — Llama 3</li>
+        </ol>
+        <a href="pre-training.html" class="enter">Start module →</a>
+      </div>
+
+      <div class="col">
+        <div class="col-num">MODULE 03</div>
+        <h3><a href="post-training.html">Post-Training</a></h3>
+        <div class="count">5 topics</div>
+        <ol>
+          <li>Overview</li>
+          <li>Supervised Fine-Tuning</li>
+          <li>Preference Optimization</li>
+          <li>Tools &amp; Safety Tuning</li>
+          <li>Case Study — Tülu 3</li>
+        </ol>
+        <a href="post-training.html" class="enter">Start module →</a>
+      </div>
+
+    </div>
+
+    <div class="prose" style="margin-top:2.5rem">
+      <h4>How to use this</h4>
+      <p>The three modules are meant to be read in order — Architecture builds the machine, Pre-Training fills it with knowledge, Post-Training turns it into an assistant — but each stands on its own. Inside every module, a sticky strip lets you jump between topics, and each topic ends in a small interactive demo: tokenize live text, scrub a training-loss curve, run a DPO step, rebuild GPT-2's parameter count. Everything runs in your browser with no dependencies. Toggle light/dark from the header.</p>
+    </div>
+
+  </main>
+
+  <footer class="foot">
+    <span>LLM Fundamentals · a free interactive course</span>
+    <span>Built by Ariyan Basu · vanilla JS, no dependencies</span>
+  </footer>
+
+</div>
+</body>
+</html>

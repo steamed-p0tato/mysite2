@@ -1,0 +1,765 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Architecture — LLM Fundamentals</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body class="page-course">
+<div class="container course">
+
+  <header class="header">
+    <div class="logo"><h1>LLM&nbsp;Fundamentals</h1></div>
+    <nav class="nav">
+      <a href="architecture.html" class="active">Architecture</a>
+      <a href="pre-training.html">Pre-Training</a>
+      <a href="post-training.html">Post-Training</a>
+      <button class="theme-toggle" type="button" aria-label="Toggle theme">☾</button>
+    </nav>
+  </header>
+
+  <main class="main-col">
+
+    <section class="course-hero">
+      <div class="eyebrow">Module 01 · 9 topics</div>
+      <h2>Architecture</h2>
+      <p>How raw text becomes a vector, flows through stacked attention, and comes out the other side as a prediction. Every box below is something you can poke.</p>
+    </section>
+
+    <nav class="topic-strip" aria-label="Topics">
+      <a href="#intro">1 · Introduction</a>
+      <a href="#tokenization">2 · Tokenization</a>
+      <a href="#embedding">3 · Embeddings</a>
+      <a href="#position">4 · Positional</a>
+      <a href="#attention">5 · Attention</a>
+      <a href="#layers">6 · Layers</a>
+      <a href="#predict">7 · Predict</a>
+      <a href="#rlhf">8 · Instruction + RLHF</a>
+      <a href="#gpt2">9 · GPT-2</a>
+    </nav>
+
+    <!-- 1 ============================================================ -->
+    <section class="topic" id="intro">
+      <div class="topic-head"><span class="topic-num">01</span><h3>Introduction</h3></div>
+      <p class="lead">A large language model is a function that maps a sequence of tokens to a probability distribution over the next token. Everything else is detail in service of that one job. Here is the whole pipeline — click any stage to jump to it.</p>
+      <div class="prose">
+        <p>That one-sentence definition hides something remarkable. "Predict the next token" sounds almost trivial, yet to do it <em>well</em> across all of human text, a model is forced to absorb grammar, facts, reasoning patterns, translation, code, and a rough model of the world — because all of those are needed to guess what comes next. Capability is a side-effect of compression: the better you compress text, the more you must have understood it.</p>
+        <p>The architecture that does this is the <strong>Transformer</strong> (Vaswani et al., 2017). Modern LLMs use the <em>decoder-only</em> variant: text flows left-to-right, each token can only see the tokens before it, and the same stack of operations repeats at every position in parallel. The genius of the design is that it's almost entirely <strong>matrix multiplications</strong> — which is exactly what GPUs do fastest — so it scales to thousands of chips and trillions of words. As you walk through the seven stages below, keep one thing in mind: there is no separate "knowledge database" inside. Everything the model knows lives in the numbers (the <em>weights</em>) that these operations multiply against.</p>
+      </div>
+      <div class="viz">
+        <p class="viz-title">The forward pass, end to end</p>
+        <div class="flow" id="introFlow">
+          <div class="flow-box" data-go="tokenization">Text<small>"the cat"</small></div>
+          <span class="flow-arrow">→</span>
+          <div class="flow-box" data-go="tokenization">Tokenize<small>ids</small></div>
+          <span class="flow-arrow">→</span>
+          <div class="flow-box" data-go="embedding">Embed<small>vectors</small></div>
+          <span class="flow-arrow">→</span>
+          <div class="flow-box" data-go="position">+ Position<small>order</small></div>
+          <span class="flow-arrow">→</span>
+          <div class="flow-box" data-go="layers">Blocks ×N<small>attn + FFN</small></div>
+          <span class="flow-arrow">→</span>
+          <div class="flow-box" data-go="predict">Predict<small>next token</small></div>
+        </div>
+        <div class="readout" id="introRead">Hover a stage to see what it does. The model repeats the <b>Blocks ×N</b> step dozens of times — that depth is where "understanding" accumulates.</div>
+      </div>
+    </section>
+
+    <!-- 2 ============================================================ -->
+    <section class="topic" id="tokenization">
+      <div class="topic-head"><span class="topic-num">02</span><h3>Tokenization</h3></div>
+      <p class="lead">Models don't see characters or words — they see <strong>tokens</strong>, chunks of text from a fixed vocabulary. Common words are one token; rare words split into pieces. Type below and watch the split happen.</p>
+      <div class="prose">
+        <p>Why not just feed the model words, or letters? Words fail because language has an unbounded vocabulary — every typo, name, hashtag and foreign word would be an unknown. Single characters work but waste the model's effort spelling out common words letter by letter. <strong>Subword tokenization</strong> is the compromise that won: keep frequent words whole, and break rare ones into reusable fragments, so a fixed vocabulary of ~50k–130k tokens can express <em>any</em> string.</p>
+        <p>The dominant method is <strong>Byte-Pair Encoding (BPE)</strong>. It starts from individual bytes and repeatedly merges the most frequent adjacent pair into a new token, learning a vocabulary bottom-up from the training corpus. The result is that <code>"the"</code> is one token, but <code>"tokenization"</code> might be <code>token</code> + <code>ization</code>. This has real consequences you can feel as a user: tokens are why models charge per-token, why they're weak at character-level tasks like counting letters or rhyming, and why a leading space changes a token's identity. Try a rare or made-up word below and watch it shatter into pieces.</p>
+      </div>
+      <div class="viz">
+        <p class="viz-title">Live subword tokenizer (BPE-style demo)</p>
+        <div class="control" style="width:100%">
+          <label for="tokInput">Your text</label>
+          <textarea id="tokInput" rows="2">Tokenization splits unbelievable text into subwords.</textarea>
+        </div>
+        <div class="tokens" id="tokOut"></div>
+        <div class="readout" id="tokRead"></div>
+      </div>
+      <p class="note">This is an illustrative splitter, not a real GPT tokenizer — but the behaviour (frequent → whole, rare → fragments, leading space matters) is the same idea.</p>
+    </section>
+
+    <!-- 3 ============================================================ -->
+    <section class="topic" id="embedding">
+      <div class="topic-head"><span class="topic-num">03</span><h3>The Embedding Layer</h3></div>
+      <p class="lead">Each token id is looked up in a big table and becomes a vector of numbers. Training arranges these vectors so that <strong>meaning becomes geometry</strong> — similar words sit close together. Pick two words and compare them.</p>
+      <div class="prose">
+        <p>A token id like <code>50143</code> is just an arbitrary index — it carries no meaning on its own. The <strong>embedding layer</strong> is a giant lookup table (in GPT-2, <code>50,257 × 768</code> numbers) that turns each id into a dense vector of, say, 768 real numbers. These vectors are <em>learned</em> during training: nothing tells the model that "king" and "queen" are related, but because they appear in similar contexts, gradient descent nudges their vectors close together. Meaning is never stored as a definition — it's stored as a <strong>position in space</strong>.</p>
+        <p>This is what makes the famous "word arithmetic" possible: in a well-trained space, <code>king − man + woman ≈ queen</code>, because directions in the space encode consistent relationships (gender, tense, plurality). We measure closeness with <strong>cosine similarity</strong> — the angle between two vectors — rather than raw distance, because what matters is direction, not magnitude. The scatter below is a flattened 2-D shadow of a high-dimensional space; pick any two words and watch their similarity score, and notice how words from the same category cluster.</p>
+      </div>
+      <div class="viz">
+        <p class="viz-title">Embedding space (2-D projection)</p>
+        <div class="viz-cols">
+          <div>
+            <canvas id="embCanvas"></canvas>
+          </div>
+          <div>
+            <div class="controls">
+              <div class="control">
+                <label for="embA">Word A</label>
+                <select id="embA"></select>
+              </div>
+              <div class="control">
+                <label for="embB">Word B</label>
+                <select id="embB"></select>
+              </div>
+            </div>
+            <div class="tag">vector A (first 8 dims)</div>
+            <div class="tokens" id="embVecA"></div>
+            <div class="readout" id="embRead"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 4 ============================================================ -->
+    <section class="topic" id="position">
+      <div class="topic-head"><span class="topic-num">04</span><h3>Positional Encoding</h3></div>
+      <p class="lead">Attention is order-blind on its own — "dog bites man" and "man bites dog" would look identical. Positional encodings inject <strong>where</strong> each token sits, using sine/cosine waves of different frequencies. Each row below is one position's signature.</p>
+      <div class="prose">
+        <p>Here's a subtle problem. The attention mechanism (next topic) treats its input as a <em>set</em>, not a sequence — it has no built-in notion of first, second, third. Shuffle the words and the raw math gives the same answer. Yet order is everything in language. So we have to add position information explicitly.</p>
+        <p>The original Transformer used <strong>sinusoidal encodings</strong>: each position gets a unique fingerprint made of sine and cosine waves at many frequencies, added to its embedding. Low-frequency dimensions change slowly across the sequence (coarse position), high-frequency ones change fast (fine position) — together they give every position a distinct, smoothly varying signature the model can do arithmetic on, even for sequences longer than it saw in training. Modern models like Llama use a refinement called <strong>RoPE</strong> (rotary position embeddings) that rotates the query and key vectors by an angle proportional to position, which encodes <em>relative</em> distance directly inside attention and extrapolates better to long contexts. The heatmap below shows the classic sinusoidal pattern — each row is a position, each column a dimension.</p>
+      </div>
+      <div class="viz">
+        <p class="viz-title">Sinusoidal position encoding</p>
+        <div class="controls">
+          <div class="control">
+            <label for="posLen">Sequence length <output id="posLenV">24</output></label>
+            <input type="range" id="posLen" min="8" max="48" value="24">
+          </div>
+          <div class="control">
+            <label for="posDim">Dimensions <output id="posDimV">32</output></label>
+            <input type="range" id="posDim" min="8" max="64" value="32" step="2">
+          </div>
+        </div>
+        <canvas id="posCanvas"></canvas>
+        <div class="readout">Each <b>row</b> = a position, each <b>column</b> = a dimension. Low dims (left) wave slowly, high dims wave fast — together they give every position a unique fingerprint the model can do arithmetic on.</div>
+      </div>
+    </section>
+
+    <!-- 5 ============================================================ -->
+    <section class="topic" id="attention">
+      <div class="topic-head"><span class="topic-num">05</span><h3>Attention</h3></div>
+      <p class="lead">The core mechanism. Every token builds a <strong>query</strong> and asks every other token (via their <strong>keys</strong>) "how relevant are you to me?". The answer becomes a weighted blend of their <strong>values</strong>. Click a token to see what it looks at.</p>
+      <div class="prose">
+        <p>Attention is the idea that made the Transformer — the "T" in GPT — and it's worth slowing down on. Think of it as a soft, learned database lookup happening at every position simultaneously. Each token projects its vector three ways: a <strong>query</strong> (what am I looking for?), a <strong>key</strong> (what do I offer?), and a <strong>value</strong> (what will I contribute if chosen?). To update a token, the model takes the dot product of its query with every key, turns those scores into weights with softmax, and blends the corresponding values. A pronoun like "it" can thus reach back and pull in the noun it refers to; a verb can gather its subject and object.</p>
+        <p>Two details matter. First, this is <strong>causal</strong> (masked) attention: a token may only attend to tokens at or before its own position — you can't peek at the future you're trying to predict. Second, models run many attention "<strong>heads</strong>" in parallel, each free to specialize — one might track syntax, another long-range coreference, another simple position. The grid below is one head's weights; click any query token to see exactly what it chose to look at, and watch how it can only see backwards.</p>
+      </div>
+      <div class="viz">
+        <p class="viz-title">Self-attention weights — click a query token</p>
+        <div class="pill-group" id="attnTokens" style="margin-bottom:1rem"></div>
+        <canvas id="attnCanvas"></canvas>
+        <div class="readout" id="attnRead">Selected token <b>—</b>. Brighter cell = more attention paid to that token. Notice attention is causal here: a token can only look <em>backwards</em>.</div>
+      </div>
+    </section>
+
+    <!-- 6 ============================================================ -->
+    <section class="topic" id="layers">
+      <div class="topic-head"><span class="topic-num">06</span><h3>Layers of Understanding</h3></div>
+      <p class="lead">One transformer block = attention (mix across tokens) + a feed-forward network (think per token), each wrapped in a residual connection and normalization. Stack many of them and abstractions build up layer by layer. Drag the depth slider.</p>
+      <div class="prose">
+        <p>Attention alone only <em>moves information between</em> tokens; it doesn't do much computation on each one. That's the job of the second half of every block: a <strong>feed-forward network</strong> (FFN), a little two-layer MLP applied independently to each position, usually expanding to 4× the width and back. If attention is "gather what's relevant," the FFN is "now think about it." Much of a model's factual knowledge is believed to live in these FFN weights.</p>
+        <p>Two unglamorous pieces make deep stacks trainable. <strong>Residual connections</strong> add each sub-layer's output back to its input, giving gradients a clean highway down through dozens of layers so they don't vanish. <strong>Normalization</strong> (LayerNorm, or RMSNorm in newer models) keeps the numbers in a stable range at every step. Stack this block 12, 80, even 126 times and a rough hierarchy emerges — early layers handle surface form, middle layers handle syntax and reference, late layers handle meaning, task structure and reasoning. Drag the slider and watch the kinds of features that tend to appear as depth grows.</p>
+      </div>
+      <div class="viz">
+        <p class="viz-title">Stacking transformer blocks</p>
+        <div class="controls">
+          <div class="control">
+            <label for="layN">Depth (blocks) <output id="layNV">6</output></label>
+            <input type="range" id="layN" min="1" max="12" value="6">
+          </div>
+        </div>
+        <div class="viz-cols">
+          <div id="layStack" style="display:flex;flex-direction:column-reverse;gap:6px"></div>
+          <div>
+            <div class="tag">what tends to emerge with depth</div>
+            <div class="readout" id="layRead"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 7 ============================================================ -->
+    <section class="topic" id="predict">
+      <div class="topic-head"><span class="topic-num">07</span><h3>Learning to Predict</h3></div>
+      <p class="lead">The final layer turns the last token's vector into a score for every word in the vocabulary; softmax makes those scores a probability distribution. <strong>Temperature</strong> controls how bold the sampling is. Pick a prompt, then sample.</p>
+      <div class="prose">
+        <p>After the last block, each position holds a richly-processed vector. To predict, the model multiplies that vector by an output matrix (often the embedding table reused, "tied weights") to produce one <strong>logit</strong> — a raw score — for every token in the vocabulary. <strong>Softmax</strong> exponentiates and normalizes those scores into probabilities that sum to 1. That distribution <em>is</em> the model's answer; everything else is how we pick from it.</p>
+        <p><strong>Temperature</strong> reshapes the distribution before sampling: divide the logits by a small number (&lt;1) and the peaks sharpen — the model plays it safe and nearly always takes the top token; divide by a larger number (&gt;1) and the distribution flattens — lower-probability, more surprising tokens get a real chance. This is the single knob behind "make it more creative" vs. "make it more focused." Real systems add tricks like <em>top-k</em> and <em>top-p (nucleus)</em> sampling to clip the long tail of nonsense. Generation is autoregressive: sample one token, append it, feed the whole thing back in, repeat. Adjust the temperature below, then hit sample a few times to feel the randomness.</p>
+      </div>
+      <div class="viz">
+        <p class="viz-title">Next-token distribution</p>
+        <div class="controls">
+          <div class="control">
+            <label for="predPrompt">Prompt</label>
+            <select id="predPrompt">
+              <option>The sky is</option>
+              <option>I poured a cup of</option>
+              <option>To be or not to</option>
+              <option>The opposite of hot is</option>
+            </select>
+          </div>
+          <div class="control">
+            <label for="predTemp">Temperature <output id="predTempV">0.8</output></label>
+            <input type="range" id="predTemp" min="0.1" max="1.6" step="0.1" value="0.8">
+          </div>
+          <div class="control">
+            <label>&nbsp;</label>
+            <button class="btn accent" id="predSample" type="button">Sample a token ▸</button>
+          </div>
+        </div>
+        <div class="bars" id="predBars"></div>
+        <div class="readout" id="predRead">Low temperature → the model plays it safe (picks the top bar). High temperature → flatter distribution, more surprising choices.</div>
+      </div>
+    </section>
+
+    <!-- 8 ============================================================ -->
+    <section class="topic" id="rlhf">
+      <div class="topic-head"><span class="topic-num">08</span><h3>Instruction Tuning &amp; RLHF</h3></div>
+      <p class="lead">A raw pretrained model just continues text — it doesn't <em>follow</em> instructions. Instruction tuning teaches the format; <strong>RLHF</strong> (reinforcement learning from human feedback) then nudges it toward answers humans prefer. Compare the same prompt before and after.</p>
+      <div class="prose">
+        <p>Here's a counterintuitive fact: the base model that comes out of pretraining is <em>not</em> the helpful assistant you talk to. It's a pure text-continuation engine. Ask it "What is the capital of France?" and it might continue with "What is the capital of Germany? What is the capital of Spain?" — because that's a plausible continuation of a quiz, not because it's unhelpful. The knowledge is all there; the <em>behaviour</em> isn't.</p>
+        <p>Two steps fix this. <strong>Instruction tuning</strong> (supervised fine-tuning) shows the model thousands of example (instruction → good answer) pairs so it learns the assistant format and to actually respond. Then <strong>RLHF</strong> aligns it with human <em>preference</em>: the model generates several answers, humans (or a reward model trained on human rankings) say which is better, and the model is updated to produce more of what people prefer — more helpful, honest and harmless. This is a quick preview; Module 03 is entirely about this post-training stage. Toggle base vs. aligned below to see the difference one short fine-tuning phase makes.</p>
+      </div>
+      <div class="viz">
+        <p class="viz-title">Base vs. aligned — same prompt</p>
+        <div class="pill-group" style="margin-bottom:1rem">
+          <button class="pill on" data-mode="base">Base model</button>
+          <button class="pill" data-mode="aligned">After RLHF</button>
+        </div>
+        <div class="readout" id="rlhfOut"></div>
+        <div class="tag" style="margin-top:1.2rem">the RLHF loop</div>
+        <div class="flow" id="rlhfFlow">
+          <div class="flow-box">Prompt</div><span class="flow-arrow">→</span>
+          <div class="flow-box">Model writes<small>several answers</small></div><span class="flow-arrow">→</span>
+          <div class="flow-box">Humans rank<small>best → worst</small></div><span class="flow-arrow">→</span>
+          <div class="flow-box">Reward model<small>learns taste</small></div><span class="flow-arrow">→</span>
+          <div class="flow-box">Policy update<small>↑ preferred</small></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 9 ============================================================ -->
+    <section class="topic casestudy" id="gpt2">
+      <div class="topic-head"><span class="topic-num">09</span><h3>Case Study — GPT-2 from Scratch</h3></div>
+      <p class="lead">Everything in this module — tokenize, embed, add position, stack attention blocks, predict — is exactly what GPT-2 does. It was the model that turned "scale a language model and capabilities fall out" from a hunch into a headline. Here is its full story, then a calculator that rebuilds its sizing from first principles.</p>
+
+      <div class="prose">
+        <h4>Where it sits in history</h4>
+        <p>GPT-2 was announced by OpenAI on <strong>14 February 2019</strong>, in a blog post pointedly titled <em>"Better Language Models and Their Implications."</em> It was the middle child of the GPT line: GPT-1 (2018) had introduced the "pre-train then fine-tune" recipe at 117M parameters; GPT-2 kept the recipe almost unchanged but scaled it more than tenfold and re-framed the whole project around <strong>zero-shot task transfer</strong>; GPT-3 (2020) would scale the same idea again to 175B and discover in-context few-shot learning. The GPT-2 paper itself notes that its smallest model "is equivalent to the original GPT," and its second-smallest "is equivalent to the largest model from BERT."</p>
+
+        <p>The paper's title is <em>"Language Models are Unsupervised Multitask Learners"</em> (Radford, Wu, Child, Luan, Amodei &amp; Sutskever). Its thesis is the heart of why GPT-2 mattered: if a high-capacity model is trained on enough diverse text, then <em>in order to predict that text well</em> it must implicitly learn to perform the tasks that naturally appear in it — translation, question answering, summarization. So those tasks can be invoked <strong>zero-shot</strong>, with no fine-tuning, just a natural-language prompt like <code>TL;DR:</code>. That reframing — from "fine-tune a model per task" to "prompt one general model" — is the conceptual ancestor of everything we now call prompting.</p>
+
+        <h4>The model "too dangerous to release"</h4>
+        <p>GPT-2 is as famous for <em>how</em> it was released as for what it did. On announcement day, OpenAI published the paper and released only the <strong>smallest</strong> model, withholding the weights of the full 1.5-billion-parameter version — citing fears it could mass-produce misleading news, impersonate people, and automate spam and phishing. A research lab declining to ship its own flagship on safety grounds was unprecedented, and the press ran with "the AI too dangerous to release."</p>
+        <p>What followed was a deliberate <strong>staged release</strong>, meant to let society watch for misuse at each rung of the ladder:</p>
+      </div>
+
+      <div class="timeline">
+        <div class="event"><div class="when">Feb 14, 2019</div><p class="what"><strong>124M (small)</strong> released + paper published. The 1.5B model withheld; "staged release" and partner-sharing announced.</p></div>
+        <div class="event"><div class="when">May 2019</div><p class="what"><strong>355M (medium)</strong> released as the watch-for-misuse experiment continued.</p></div>
+        <div class="event"><div class="when">Aug 20, 2019</div><p class="what"><strong>774M (large)</strong> released alongside a report on release strategies and social impact.</p></div>
+        <div class="event"><div class="when">Nov 5, 2019</div><p class="what"><strong>Full 1.5B (XL)</strong> released — ~9 months later — after OpenAI found no strong evidence of misuse and judged the research benefits to outweigh the risks.</p></div>
+      </div>
+
+      <div class="callout">
+        <span class="callout-label">Why this still matters</span>
+        <p>GPT-2's staged rollout was the first high-profile case of a lab withholding a model over dual-use risk. Whether you read it as responsible disclosure or as overcaution-plus-hype, it set the template for every "should we release this?" debate that followed.</p>
+      </div>
+
+      <div class="prose">
+        <h4>How it was built</h4>
+        <p>Architecturally GPT-2 is a <strong>decoder-only Transformer</strong> with causal (masked) self-attention — the same family of blocks you stacked in topic 6. It changed only a few things from GPT-1, but they're the changes that made deep training stable, and most are still standard today:</p>
+        <ul>
+          <li><strong>Pre-norm:</strong> layer normalization moved to the <em>input</em> of each sub-block, with an extra final norm after the last block — far more stable gradients at depth.</li>
+          <li><strong>Residual init scaling</strong> by <code>1/√N</code> (N = number of residual layers), so signal doesn't blow up as you stack blocks.</li>
+          <li><strong>Vocabulary</strong> expanded to <code>50,257</code>, <strong>context</strong> doubled from 512 to <code>1024</code> tokens, <strong>batch size</strong> raised to 512.</li>
+        </ul>
+
+        <h4>Tokenizer: byte-level BPE</h4>
+        <p>GPT-2 introduced the tokenizer template still copied everywhere. The goal was a model that can assign probability to <em>any</em> string with no <code>&lt;UNK&gt;</code> token. Pure byte-level models are universal but underperform; word-level BPE over Unicode would need a 130,000-symbol base vocabulary. The fix: <strong>byte-level BPE</strong> — start from just the <code>256</code> possible bytes, then learn <code>50,000</code> merges on top, plus one <code>&lt;|endoftext|&gt;</code> token = <strong>50,257</strong>. Universal coverage, manageable vocabulary.</p>
+
+        <h4>Training data: WebText</h4>
+        <p>Rather than wrestle with Common Crawl's noise, OpenAI built <strong>WebText</strong> from a human-quality signal: every outbound link from Reddit that had earned <strong>at least 3 karma</strong>. That heuristic scraped <strong>45 million links</strong>; after extraction (Dragnet + Newspaper), de-duplication and cleaning, it yielded <strong>~8 million documents / ~40 GB</strong> of text. Wikipedia was deliberately <em>removed</em> — not for quality, but to avoid contaminating the zero-shot benchmark evaluations the paper relied on. The objective was the plainest possible one, in OpenAI's own words: "trained simply to predict the next word in 40GB of Internet text."</p>
+
+        <h4>What it could do — all zero-shot</h4>
+        <p>Without any task-specific fine-tuning, the 1.5B model set a new <strong>state of the art on 7 of 8</strong> language-modeling benchmarks. On <strong>LAMBADA</strong> it slashed perplexity from 99.8 to <strong>8.6</strong> and raised accuracy from 19% to <strong>52.7%</strong>; on the <strong>Children's Book Test</strong> it hit 93.3% / 89.1%. Summarization (via a <code>TL;DR:</code> hint) and translation (~5 BLEU) were weak but <em>present</em> in a model never trained for them — proof of the multitask thesis. And the cherry-picked <strong>unicorn sample</strong> — a coherent fake news article about English-speaking unicorns in the Andes — became the cultural moment generative text first "felt" real to a general audience.</p>
+
+        <p>Critically, the paper reported that <strong>all models still underfit WebText</strong>: even 1.5B parameters hadn't saturated the data, and performance kept improving log-linearly with size. That single observation was the argument for GPT-3, and for the entire scaling era that followed.</p>
+      </div>
+
+      <p class="subhead">Build a GPT-2 configuration</p>
+      <p class="lead">The whole model's size is determined by a handful of numbers. Drag the sliders to rebuild any of the four real GPT-2 sizes — and watch the <strong>parameter count</strong> update live. <span class="note" style="display:inline">Note: the paper's Table 2 labels these 117M/345M/762M/1542M; later releases count embedding params too and call them 124M/355M/774M/1558M — same four models.</span></p>
+      <div class="viz">
+        <p class="viz-title">Parameter calculator</p>
+        <div class="controls">
+          <div class="control"><label for="g_layer">Layers <output id="g_layerV">12</output></label><input type="range" id="g_layer" min="1" max="48" value="12"></div>
+          <div class="control"><label for="g_dmodel">d_model <output id="g_dmodelV">768</output></label><input type="range" id="g_dmodel" min="128" max="1600" step="64" value="768"></div>
+          <div class="control"><label for="g_head">Heads <output id="g_headV">12</output></label><input type="range" id="g_head" min="1" max="25" value="12"></div>
+          <div class="control"><label for="g_ctx">Context <output id="g_ctxV">1024</output></label><input type="range" id="g_ctx" min="256" max="2048" step="256" value="1024"></div>
+        </div>
+        <div class="kv-grid">
+          <div class="kv-card"><div class="k">Total parameters</div><div class="v" id="g_total">—</div></div>
+          <div class="kv-card"><div class="k">Per-block params</div><div class="v" id="g_block">—</div></div>
+          <div class="kv-card"><div class="k">Embedding params</div><div class="v" id="g_emb">—</div></div>
+          <div class="kv-card"><div class="k">Closest to</div><div class="v" id="g_name" style="font-size:1.15rem">—</div></div>
+        </div>
+        <div class="readout">Vocabulary fixed at <code>50257</code>, FFN width = <code>4 × d_model</code> (the GPT-2 convention). Notice how layers and d_model dominate the count — that's why scaling is mostly "make it deeper and wider".</div>
+      </div>
+
+      <p class="subhead">The four real sizes (paper Table 2)</p>
+      <div class="deflist">
+        <div class="row"><div class="term">124M · small</div><div class="def">12 layers · d_model 768 · 12 heads · 1024 context — "equivalent to the original GPT."</div></div>
+        <div class="row"><div class="term">355M · medium</div><div class="def">24 layers · d_model 1024 · 16 heads — "equivalent to the largest BERT model."</div></div>
+        <div class="row"><div class="term">774M · large</div><div class="def">36 layers · d_model 1280 · 20 heads.</div></div>
+        <div class="row"><div class="term">1.5B · XL</div><div class="def">48 layers · d_model 1600 · 25 heads — the "too dangerous to release" flagship.</div></div>
+      </div>
+      <p class="note">Head dimension is 64 throughout (heads = d_model ÷ 64). FFN width = 4 × d_model. These two conventions, plus byte-level BPE and the 50,257 vocab, were copied directly into GPT-3 and countless later models.</p>
+    </section>
+
+  </main>
+
+  <footer class="foot">
+    <span>LLM Fundamentals · Module 01 — Architecture</span>
+    <span>Interactive demos · vanilla JS, no dependencies</span>
+  </footer>
+
+</div>
+
+<script src="course.js"></script>
+<script>
+/* ============================ 1. Intro flow ============================ */
+(function () {
+  const blurbs = {
+    tokenization: 'Tokenize — text is chopped into ids from a fixed vocabulary.',
+    embedding: 'Embed — each id becomes a learned vector. Meaning becomes geometry.',
+    position: 'Position — order information is added so the model knows sequence.',
+    layers: 'Blocks ×N — attention + feed-forward, repeated. Depth = abstraction.',
+    predict: 'Predict — the last vector becomes a probability over the next token.'
+  };
+  const read = document.getElementById('introRead');
+  const def = read.innerHTML;
+  document.querySelectorAll('#introFlow .flow-box').forEach(function (b) {
+    const go = b.dataset.go;
+    b.addEventListener('mouseenter', function () { if (blurbs[go]) read.textContent = blurbs[go]; });
+    b.addEventListener('mouseleave', function () { read.innerHTML = def; });
+    b.addEventListener('click', function () {
+      const t = document.getElementById(go);
+      if (t) t.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  });
+})();
+
+/* ============================ 2. Tokenizer ============================ */
+(function () {
+  const input = document.getElementById('tokInput');
+  const out = document.getElementById('tokOut');
+  const read = document.getElementById('tokRead');
+  // a tiny "merged vocabulary" of whole words; everything else fragments
+  const whole = new Set(('the a an of to in is it and or but text into for on at as be this that with you i ' +
+    'splits cup sky cat dog was were are not so we he she they').split(' '));
+  const suffixes = ['ization', 'ation', 'able', 'ible', 'ing', 'tion', 'ness', 'ment', 'ly', 'ed', 'es', 's', 'er'];
+  const prefixes = ['un', 're', 'in', 'pre', 'sub', 'dis'];
+
+  function tokenizeWord(w) {
+    const lw = w.toLowerCase();
+    if (whole.has(lw) || lw.length <= 3) return [w];
+    const pieces = [];
+    let rest = w;
+    // peel a prefix
+    for (const p of prefixes) {
+      if (rest.toLowerCase().startsWith(p) && rest.length > p.length + 2) {
+        pieces.push(rest.slice(0, p.length)); rest = rest.slice(p.length); break;
+      }
+    }
+    // peel a suffix
+    for (const s of suffixes) {
+      if (rest.toLowerCase().endsWith(s) && rest.length > s.length + 2) {
+        const stem = rest.slice(0, rest.length - s.length);
+        pieces.push(stem); pieces.push('##' + s); rest = '';
+        break;
+      }
+    }
+    if (rest) pieces.push(rest);
+    return pieces.length ? pieces : [w];
+  }
+
+  function run() {
+    const text = input.value;
+    out.innerHTML = '';
+    const words = text.match(/\s+|[^\s]+/g) || [];
+    let count = 0;
+    words.forEach(function (chunk) {
+      if (/^\s+$/.test(chunk)) return; // whitespace folds into following token visually
+      tokenizeWord(chunk).forEach(function (piece, i) {
+        const chip = document.createElement('span');
+        chip.className = 'token-chip';
+        const lead = (i === 0 ? '␣' : '');
+        chip.innerHTML = (lead + piece.replace('##', '')).replace('␣', '<small>␣</small>') +
+          '<small>' + (CK.hash(piece) % 50257) + '</small>';
+        out.appendChild(chip);
+        count++;
+      });
+    });
+    const chars = text.length;
+    read.innerHTML = '<b>' + count + '</b> tokens · <b>' + chars + '</b> characters · ratio ≈ <b>' +
+      (chars && count ? (chars / count).toFixed(2) : '0') + '</b> chars/token. ' +
+      'Frequent words stay whole; <code>##</code> marks a continued subword.';
+  }
+  input.addEventListener('input', run);
+  run();
+})();
+
+/* ============================ 3. Embeddings ============================ */
+(function () {
+  const words = [
+    { w: 'king',   x: 0.74, y: 0.22, c: 'royal' },
+    { w: 'queen',  x: 0.80, y: 0.34, c: 'royal' },
+    { w: 'prince', x: 0.68, y: 0.30, c: 'royal' },
+    { w: 'man',    x: 0.55, y: 0.55, c: 'people' },
+    { w: 'woman',  x: 0.62, y: 0.66, c: 'people' },
+    { w: 'child',  x: 0.50, y: 0.70, c: 'people' },
+    { w: 'dog',    x: 0.20, y: 0.28, c: 'animal' },
+    { w: 'cat',    x: 0.26, y: 0.20, c: 'animal' },
+    { w: 'wolf',   x: 0.14, y: 0.40, c: 'animal' },
+    { w: 'apple',  x: 0.30, y: 0.82, c: 'food' },
+    { w: 'bread',  x: 0.40, y: 0.90, c: 'food' },
+    { w: 'run',    x: 0.86, y: 0.78, c: 'verb' },
+    { w: 'jump',   x: 0.92, y: 0.70, c: 'verb' },
+    { w: 'happy',  x: 0.10, y: 0.66, c: 'adj' }
+  ];
+  // give each a deterministic high-dim vector seeded by position+category
+  words.forEach(function (o) {
+    const r = CK.rng(CK.hash(o.w + o.c));
+    o.vec = Array.from({ length: 16 }, function () { return (r() * 2 - 1); });
+  });
+  function cos(a, b) {
+    let d = 0, na = 0, nb = 0;
+    for (let i = 0; i < a.length; i++) { d += a[i] * b[i]; na += a[i] * a[i]; nb += b[i] * b[i]; }
+    // blend in the 2-D layout so "closeness on screen" matches the number
+    return d / (Math.sqrt(na * nb) + 1e-9);
+  }
+  function dist2d(a, b) { return Math.hypot(a.x - b.x, a.y - b.y); }
+
+  const selA = document.getElementById('embA');
+  const selB = document.getElementById('embB');
+  words.forEach(function (o, i) {
+    [selA, selB].forEach(function (sel) {
+      const op = document.createElement('option'); op.value = i; op.textContent = o.w; sel.appendChild(op);
+    });
+  });
+  selA.value = 0; selB.value = 1;
+
+  const canvas = document.getElementById('embCanvas');
+  const vecA = document.getElementById('embVecA');
+  const read = document.getElementById('embRead');
+
+  function draw() {
+    const ctx = CK.fitCanvas(canvas, 300);
+    const W = ctx._w, H = ctx._h, pad = 26;
+    const ink = CK.cssVar('--ink'), muted = CK.cssVar('--muted'),
+      accent = CK.cssVar('--accent'), border = CK.cssVar('--border');
+    ctx.clearRect(0, 0, W, H);
+    const px = function (x) { return pad + x * (W - 2 * pad); };
+    const py = function (y) { return pad + y * (H - 2 * pad); };
+    const ai = +selA.value, bi = +selB.value;
+    // connector
+    ctx.strokeStyle = accent; ctx.lineWidth = 1.5; ctx.setLineDash([4, 4]);
+    ctx.beginPath(); ctx.moveTo(px(words[ai].x), py(words[ai].y));
+    ctx.lineTo(px(words[bi].x), py(words[bi].y)); ctx.stroke(); ctx.setLineDash([]);
+    words.forEach(function (o, i) {
+      const sel = (i === ai || i === bi);
+      ctx.beginPath();
+      ctx.arc(px(o.x), py(o.y), sel ? 6 : 4, 0, Math.PI * 2);
+      ctx.fillStyle = sel ? accent : border;
+      ctx.fill();
+      if (sel) { ctx.lineWidth = 2; ctx.strokeStyle = accent; ctx.stroke(); }
+      ctx.fillStyle = sel ? ink : muted;
+      ctx.font = (sel ? '600 ' : '') + '12px Inter, sans-serif';
+      ctx.fillText(o.w, px(o.x) + 8, py(o.y) + 4);
+    });
+  }
+  function update() {
+    const a = words[+selA.value], b = words[+selB.value];
+    vecA.innerHTML = a.vec.slice(0, 8).map(function (v) {
+      return '<span class="token-chip">' + v.toFixed(2) + '</span>';
+    }).join('');
+    const sim = cos(a.vec, b.vec);
+    const near = sim > 0.15 ? 'closely related' : (sim > -0.1 ? 'loosely related' : 'quite different');
+    read.innerHTML = 'cosine similarity(<b>' + a.w + '</b>, <b>' + b.w + '</b>) = <b>' + sim.toFixed(3) +
+      '</b> — geometrically <b>' + near + '</b>. Words sharing a category cluster together; that clustering is what the network learned.';
+    draw();
+  }
+  selA.addEventListener('change', update);
+  selB.addEventListener('change', update);
+  window.addEventListener('resize', draw);
+  window.addEventListener('themechange', draw);
+  update();
+})();
+
+/* ============================ 4. Positional ============================ */
+(function () {
+  const canvas = document.getElementById('posCanvas');
+  const lenS = document.getElementById('posLen'), dimS = document.getElementById('posDim');
+  const lenV = document.getElementById('posLenV'), dimV = document.getElementById('posDimV');
+  function draw() {
+    const L = +lenS.value, D = +dimS.value;
+    lenV.textContent = L; dimV.textContent = D;
+    const ctx = CK.fitCanvas(canvas, 300);
+    const W = ctx._w, H = ctx._h, pad = 8;
+    ctx.clearRect(0, 0, W, H);
+    const cw = (W - 2 * pad) / D, ch = (H - 2 * pad) / L;
+    const accent = CK.cssVar('--accent');
+    // parse accent to rgb for interpolation
+    const probe = document.createElement('canvas').getContext('2d');
+    probe.fillStyle = accent; const hex = probe.fillStyle;
+    let ar = 168, ag = 84, ab = 47;
+    if (hex[0] === '#') { ar = parseInt(hex.slice(1, 3), 16); ag = parseInt(hex.slice(3, 5), 16); ab = parseInt(hex.slice(5, 7), 16); }
+    for (let pos = 0; pos < L; pos++) {
+      for (let i = 0; i < D; i++) {
+        const denom = Math.pow(10000, (2 * Math.floor(i / 2)) / D);
+        const val = (i % 2 === 0) ? Math.sin(pos / denom) : Math.cos(pos / denom);
+        const t = (val + 1) / 2; // 0..1
+        ctx.fillStyle = 'rgba(' + ar + ',' + ag + ',' + ab + ',' + (0.12 + t * 0.85) + ')';
+        ctx.fillRect(pad + i * cw, pad + pos * ch, Math.ceil(cw), Math.ceil(ch));
+      }
+    }
+  }
+  [lenS, dimS].forEach(function (s) { s.addEventListener('input', draw); });
+  window.addEventListener('resize', draw);
+  window.addEventListener('themechange', draw);
+  draw();
+})();
+
+/* ============================ 5. Attention ============================ */
+(function () {
+  const tokens = ['The', 'cat', 'that', 'chased', 'the', 'mouse', 'was', 'fast'];
+  const wrap = document.getElementById('attnTokens');
+  const canvas = document.getElementById('attnCanvas');
+  const read = document.getElementById('attnRead');
+  let sel = tokens.length - 1;
+
+  // deterministic causal attention weights
+  const W = tokens.map(function (q, qi) {
+    const scores = [];
+    for (let ki = 0; ki <= qi; ki++) {
+      const r = CK.rng(CK.hash(tokens[qi] + '>' + tokens[ki] + ki));
+      let s = r();
+      // bias: words attend to recent tokens & to repeats of themselves
+      s += 0.5 * Math.exp(-(qi - ki) / 3);
+      if (tokens[ki].toLowerCase() === q.toLowerCase()) s += 0.4;
+      scores.push(s);
+    }
+    return CK.softmax(scores, 0.5).concat(new Array(tokens.length - qi - 1).fill(0));
+  });
+
+  tokens.forEach(function (t, i) {
+    const b = document.createElement('button');
+    b.className = 'pill' + (i === sel ? ' on' : '');
+    b.textContent = t;
+    b.addEventListener('click', function () {
+      sel = i;
+      wrap.querySelectorAll('.pill').forEach(function (p, j) { p.classList.toggle('on', j === i); });
+      draw();
+    });
+    wrap.appendChild(b);
+  });
+
+  function draw() {
+    const ctx = CK.fitCanvas(canvas, 70 + tokens.length * 26);
+    const Wc = ctx._w, Hc = ctx._h;
+    const left = 70, top = 26, cell = Math.min((Wc - left - 10) / tokens.length, (Hc - top - 10) / tokens.length);
+    ctx.clearRect(0, 0, Wc, Hc);
+    const ink = CK.cssVar('--ink'), muted = CK.cssVar('--muted'), accent = CK.cssVar('--accent');
+    let ar = 168, ag = 84, ab = 47;
+    const probe = document.createElement('canvas').getContext('2d'); probe.fillStyle = accent;
+    const hex = probe.fillStyle;
+    if (hex[0] === '#') { ar = parseInt(hex.slice(1, 3), 16); ag = parseInt(hex.slice(3, 5), 16); ab = parseInt(hex.slice(5, 7), 16); }
+    ctx.font = '11px Inter, sans-serif';
+    // column labels (keys)
+    tokens.forEach(function (t, ki) {
+      ctx.fillStyle = muted; ctx.textAlign = 'center';
+      ctx.fillText(t, left + ki * cell + cell / 2, top - 9);
+    });
+    tokens.forEach(function (qt, qi) {
+      ctx.fillStyle = (qi === sel) ? accent : muted;
+      ctx.textAlign = 'right';
+      ctx.fillText(qt, left - 8, top + qi * cell + cell / 2 + 4);
+      tokens.forEach(function (kt, ki) {
+        const w = W[qi][ki];
+        const x = left + ki * cell, y = top + qi * cell;
+        ctx.fillStyle = 'rgba(' + ar + ',' + ag + ',' + ab + ',' + (w * 0.95) + ')';
+        ctx.fillRect(x + 1, y + 1, cell - 2, cell - 2);
+        if (qi === sel && w > 0.18) {
+          ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.font = '9px Courier New, monospace';
+          ctx.fillText(w.toFixed(2), x + cell / 2, y + cell / 2 + 3);
+          ctx.font = '11px Inter, sans-serif';
+        }
+      });
+    });
+    // highlight selected row outline
+    ctx.strokeStyle = accent; ctx.lineWidth = 2;
+    ctx.strokeRect(left, top + sel * cell, cell * tokens.length, cell);
+    // readout
+    const row = W[sel];
+    let bestK = 0; for (let i = 0; i < row.length; i++) if (row[i] > row[bestK]) bestK = i;
+    read.innerHTML = 'Query <b>"' + tokens[sel] + '"</b> attends most to <b>"' + tokens[bestK] +
+      '"</b> (' + (row[bestK] * 100).toFixed(0) + '%). It can only see tokens at or before its own position — that is the causal mask.';
+  }
+  window.addEventListener('resize', draw);
+  window.addEventListener('themechange', draw);
+  draw();
+})();
+
+/* ============================ 6. Layers ============================ */
+(function () {
+  const slider = document.getElementById('layN');
+  const out = document.getElementById('layNV');
+  const stack = document.getElementById('layStack');
+  const read = document.getElementById('layRead');
+  const emerge = [
+    'L1–2 · surface patterns, word identity, simple n-grams',
+    'L3–4 · part-of-speech, local syntax, bracket matching',
+    'L5–6 · phrases, coreference ("it" → what?), subject tracking',
+    'L7–8 · semantic roles, factual associations, sentiment',
+    'L9–10 · long-range structure, reasoning steps, style',
+    'L11–12+ · task abstractions, in-context rules, planning'
+  ];
+  function draw() {
+    const n = +slider.value; out.textContent = n;
+    stack.innerHTML = '';
+    for (let i = 0; i < n; i++) {
+      const box = document.createElement('div');
+      box.className = 'flow-box';
+      box.style.cursor = 'default';
+      box.style.flex = 'none';
+      box.style.opacity = (0.5 + 0.5 * (i + 1) / n).toFixed(2);
+      box.innerHTML = 'Block ' + (i + 1) + '<small>self-attn → FFN → +residual → norm</small>';
+      stack.appendChild(box);
+    }
+    const shown = emerge.slice(0, Math.ceil(n / 2));
+    read.innerHTML = shown.map(function (s) { return '• ' + s; }).join('<br>') +
+      '<br><br><b>' + n + '</b> blocks · ~<b>' + (n * 7) + 'M</b> params at this width (toy estimate). More depth = more chances to transform the representation.';
+  }
+  slider.addEventListener('input', draw);
+  draw();
+})();
+
+/* ============================ 7. Predict ============================ */
+(function () {
+  const table = {
+    'The sky is': [['blue', 4.0], ['clear', 2.6], ['falling', 1.2], ['grey', 2.0], ['the', 0.6], ['dark', 1.7]],
+    'I poured a cup of': [['coffee', 4.2], ['tea', 3.4], ['water', 2.5], ['milk', 1.8], ['juice', 1.1], ['sugar', 0.7]],
+    'To be or not to': [['be', 4.8], ['do', 0.9], ['the', 0.5], ['have', 0.8], ['say', 0.6], ['go', 0.4]],
+    'The opposite of hot is': [['cold', 4.6], ['cool', 2.4], ['warm', 1.4], ['ice', 1.6], ['freezing', 1.9], ['not', 0.7]]
+  };
+  const promptSel = document.getElementById('predPrompt');
+  const tempS = document.getElementById('predTemp'), tempV = document.getElementById('predTempV');
+  const bars = document.getElementById('predBars');
+  const read = document.getElementById('predRead');
+  const sampleBtn = document.getElementById('predSample');
+  let picked = -1;
+
+  function draw() {
+    const rows = table[promptSel.value].slice();
+    const temp = +tempS.value; tempV.textContent = temp.toFixed(1);
+    const probs = CK.softmax(rows.map(function (r) { return r[1]; }), temp);
+    const order = rows.map(function (r, i) { return { w: r[0], p: probs[i], i: i }; })
+      .sort(function (a, b) { return b.p - a.p; });
+    bars.innerHTML = '';
+    order.forEach(function (o) {
+      const row = document.createElement('div'); row.className = 'bar-row';
+      row.innerHTML = '<span class="bar-label">' + o.w + '</span>' +
+        '<span class="bar-track"><span class="bar-fill" style="width:' + (o.p * 100).toFixed(1) + '%' +
+        (o.i === picked ? ';background:var(--ink)' : '') + '"></span></span>' +
+        '<span class="bar-val">' + (o.p * 100).toFixed(1) + '%</span>';
+      bars.appendChild(row);
+    });
+  }
+  function sample() {
+    const rows = table[promptSel.value];
+    const temp = +tempS.value;
+    const probs = CK.softmax(rows.map(function (r) { return r[1]; }), temp);
+    const r = CK.rng(CK.hash(promptSel.value + temp + Date.now()))();
+    let acc = 0, idx = 0;
+    for (let i = 0; i < probs.length; i++) { acc += probs[i]; if (r <= acc) { idx = i; break; } }
+    picked = idx;
+    draw();
+    read.innerHTML = 'Sampled → "<b>' + promptSel.value + ' ' + rows[idx][0] + '</b>". ' +
+      'At temperature <b>' + temp.toFixed(1) + '</b> the model ' +
+      (temp < 0.6 ? 'almost always picks the top bar.' : (temp > 1.1 ? 'happily picks lower bars — more creative, more risky.' : 'mostly favours the top bars but stays varied.'));
+  }
+  promptSel.addEventListener('change', function () { picked = -1; draw(); });
+  tempS.addEventListener('input', function () { picked = -1; draw(); });
+  sampleBtn.addEventListener('click', sample);
+  draw();
+})();
+
+/* ============================ 8. RLHF ============================ */
+(function () {
+  const out = document.getElementById('rlhfOut');
+  const text = {
+    base: '<span class="tag">prompt</span> "Explain why the sky is blue."<br><br>' +
+      '<b>Base model continues the text:</b><br>"Explain why the sky is blue. Explain why grass is green. ' +
+      'Explain why the ocean is— " <span style="color:var(--muted)">…it just keeps generating plausible continuations, never actually answering.</span>',
+    aligned: '<span class="tag">prompt</span> "Explain why the sky is blue."<br><br>' +
+      '<b>After instruction tuning + RLHF:</b><br>"Sunlight contains all colors. As it passes through the atmosphere, ' +
+      'shorter blue wavelengths scatter far more than red ones (Rayleigh scattering), so blue light reaches your eyes from all directions. ' +
+      '<span style="color:var(--muted)">…helpful, direct, and it stops when done.</span>"'
+  };
+  function show(m) { out.innerHTML = text[m]; }
+  document.querySelectorAll('#rlhf .pill').forEach(function (p) {
+    p.addEventListener('click', function () {
+      document.querySelectorAll('#rlhf .pill').forEach(function (q) { q.classList.remove('on'); });
+      p.classList.add('on'); show(p.dataset.mode);
+    });
+  });
+  show('base');
+})();
+
+/* ============================ 9. GPT-2 params ============================ */
+(function () {
+  const ids = ['layer', 'dmodel', 'head', 'ctx'];
+  const S = {}, V = {};
+  ids.forEach(function (k) { S[k] = document.getElementById('g_' + k); V[k] = document.getElementById('g_' + k + 'V'); });
+  const VOCAB = 50257;
+  const presets = [
+    { n: 'GPT-2 Small (124M)', p: 124e6 }, { n: 'GPT-2 Medium (355M)', p: 355e6 },
+    { n: 'GPT-2 Large (774M)', p: 774e6 }, { n: 'GPT-2 XL (1.5B)', p: 1558e6 }
+  ];
+  function fmt(n) {
+    if (n >= 1e9) return (n / 1e9).toFixed(2) + 'B';
+    if (n >= 1e6) return (n / 1e6).toFixed(1) + 'M';
+    if (n >= 1e3) return (n / 1e3).toFixed(0) + 'K';
+    return '' + n;
+  }
+  function calc() {
+    const L = +S.layer.value, d = +S.dmodel.value, ctx = +S.ctx.value;
+    ['layer', 'dmodel', 'head', 'ctx'].forEach(function (k) { V[k].textContent = S[k].value; });
+    // per block: attn qkv+out = 4*d*d ; mlp = 2*(d*4d) = 8*d*d ; +biases & norms ~ small
+    const attn = 4 * d * d;
+    const mlp = 8 * d * d;
+    const norms = 4 * d;
+    const block = attn + mlp + norms;
+    const emb = VOCAB * d + ctx * d; // token + learned positional
+    const total = block * L + emb + 2 * d; // final norm
+    document.getElementById('g_total').innerHTML = fmt(total) + ' <small>params</small>';
+    document.getElementById('g_block').innerHTML = fmt(block) + ' <small>× ' + L + '</small>';
+    document.getElementById('g_emb').innerHTML = fmt(emb) + ' <small>tok+pos</small>';
+    let best = presets[0], bd = Infinity;
+    presets.forEach(function (pr) { const dd = Math.abs(pr.p - total); if (dd < bd) { bd = dd; best = pr; } });
+    document.getElementById('g_name').textContent = best.n;
+  }
+  ids.forEach(function (k) { S[k].addEventListener('input', calc); });
+  calc();
+})();
+</script>
+</body>
+</html>

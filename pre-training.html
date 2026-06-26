@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pre-Training — LLM Fundamentals</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body class="page-course">
+<div class="container course">
+
+  <header class="header">
+    <div class="logo"><h1>LLM&nbsp;Fundamentals</h1></div>
+    <nav class="nav">
+      <a href="architecture.html">Architecture</a>
+      <a href="pre-training.html" class="active">Pre-Training</a>
+      <a href="post-training.html">Post-Training</a>
+      <button class="theme-toggle" type="button" aria-label="Toggle theme">☾</button>
+    </nav>
+  </header>
+
+  <main class="main-col">
+
+    <section class="course-hero">
+      <div class="eyebrow">Module 02 · 8 topics</div>
+      <h2>Pre-Training</h2>
+      <p>Take a blank model and trillions of tokens of raw text, and grind one objective — predict the next token — until knowledge falls out. This is where almost all the capability is built and almost all the compute is spent.</p>
+    </section>
+
+    <nav class="topic-strip" aria-label="Topics">
+      <a href="#overview">1 · Overview</a>
+      <a href="#objective">2 · Objective</a>
+      <a href="#scaling">3 · Scaling Laws</a>
+      <a href="#data">4 · Data</a>
+      <a href="#infra">5 · Infrastructure</a>
+      <a href="#advanced">6 · Advanced Objectives</a>
+      <a href="#eval">7 · Evaluation</a>
+      <a href="#llama">8 · LLaMA 3</a>
+    </nav>
+
+    <!-- 1 ============================================================ -->
+    <section class="topic" id="overview">
+      <div class="topic-head"><span class="topic-num">01</span><h3>Overview</h3></div>
+      <p class="lead">Pre-training is one giant loop: pull a batch of text, ask the model to predict each next token, measure how wrong it was, nudge every weight to be a little less wrong. Repeat for months across thousands of GPUs. Click each stage.</p>
+      <div class="prose">
+        <p>Pre-training is where a model goes from random noise to something that knows physics, poetry, Python and the plot of Hamlet. It's also where ~99% of the total compute and cost is spent — post-training (Module 03) is comparatively cheap polish on top. Understanding this phase is understanding where capability actually comes from.</p>
+        <p>The astonishing part is the lack of human labels. There is no army of annotators tagging "correct answers." The supervision is the text itself: for every position, the <em>real</em> next token is the label, and the model is graded on how much probability it assigned to it. This is called <strong>self-supervised learning</strong>, and it's the unlock — because the entire internet becomes free training data. The loop you see below runs for hundreds of thousands of steps, each step processing millions of tokens, slowly carving knowledge into billions of weights via gradient descent.</p>
+      </div>
+      <div class="viz">
+        <p class="viz-title">The pre-training loop</p>
+        <div class="flow" id="ovFlow">
+          <div class="flow-box" data-k="data">Web text<small>15T tokens</small></div><span class="flow-arrow">→</span>
+          <div class="flow-box" data-k="batch">Batch<small>millions of tokens</small></div><span class="flow-arrow">→</span>
+          <div class="flow-box" data-k="forward">Forward<small>predict next</small></div><span class="flow-arrow">→</span>
+          <div class="flow-box" data-k="loss">Loss<small>cross-entropy</small></div><span class="flow-arrow">→</span>
+          <div class="flow-box" data-k="back">Backprop<small>update weights</small></div><span class="flow-arrow">↺</span>
+        </div>
+        <div class="readout" id="ovRead">Hover any stage. The loop runs for hundreds of thousands of steps — there is no labelled data, the text <em>is</em> the supervision (the next word is the answer).</div>
+      </div>
+    </section>
+
+    <!-- 2 ============================================================ -->
+    <section class="topic" id="objective">
+      <div class="topic-head"><span class="topic-num">02</span><h3>Training Objectives &amp; Architectural Details</h3></div>
+      <p class="lead">The objective is <strong>cross-entropy loss</strong> on the next token: <code>loss = −log(p)</code>, where <code>p</code> is the probability the model assigned to the <em>correct</em> word. Confident and right → tiny loss. Confident and wrong → huge loss. Drag the probability.</p>
+      <div class="prose">
+        <p>Every training run needs a single number to minimize, and for language models that number is <strong>cross-entropy loss</strong>. Its shape is deliberate. Because loss is <code>−log(p)</code>, being right with high confidence costs almost nothing, while being confidently wrong is punished savagely — as <code>p</code> for the correct token approaches zero, the loss shoots to infinity. This asymmetry teaches the model to be <em>calibrated</em>: to hedge when unsure rather than bet everything on a wrong answer.</p>
+        <p>The architectural details are tuned in service of this objective. Decoder-only, causal masking (so the model can't cheat by seeing the answer), tied input/output embeddings, the AdamW optimizer with a warmup-then-decay learning-rate schedule, gradient clipping for stability — these are the standard furniture of a pretraining run. Loss is averaged over every token in trillions of tokens, so a tiny per-token improvement is an enormous absolute gain. A useful intuition: loss is just the log of <strong>perplexity</strong>, the model's average "surprise" — a perplexity of 8 means it's effectively choosing between ~8 equally-likely words at each step. Drag the slider to feel the cost curve.</p>
+      </div>
+      <div class="viz">
+        <p class="viz-title">Cross-entropy: the cost of being wrong</p>
+        <div class="controls">
+          <div class="control">
+            <label for="ceP">P(correct token) <output id="cePV">0.50</output></label>
+            <input type="range" id="ceP" min="0.01" max="0.99" step="0.01" value="0.5">
+          </div>
+        </div>
+        <canvas id="ceCanvas"></canvas>
+        <div class="readout" id="ceRead"></div>
+      </div>
+      <p class="note">Because loss is the <em>average</em> of <code>−log(p)</code> over every token in trillions of tokens, even a tiny per-token improvement is an enormous absolute gain.</p>
+    </section>
+
+    <!-- 3 ============================================================ -->
+    <section class="topic" id="scaling">
+      <div class="topic-head"><span class="topic-num">03</span><h3>Scaling Laws &amp; Optimization</h3></div>
+      <p class="lead">Loss falls predictably as you add <strong>parameters</strong> and <strong>data</strong> — a power law, not magic. Given a fixed compute budget, the Chinchilla result says: grow model and data <em>together</em>. Set a budget and find the sweet spot.</p>
+      <div class="prose">
+        <p>One of the most important discoveries in modern AI is that this all behaves <em>predictably</em>. Kaplan et al. (OpenAI, 2020) showed that test loss falls as a smooth <strong>power law</strong> in three quantities — model size, dataset size, and compute — spanning many orders of magnitude. This is why labs can confidently spend tens of millions of dollars on a single run: they can extrapolate from small experiments and know roughly what loss they'll land on before they start.</p>
+        <p>The <strong>Chinchilla</strong> paper (DeepMind, 2022) sharpened this into a recipe. Given a fixed compute budget — and since compute ≈ <code>6 × params × tokens</code> — how should you split it between a bigger model and more data? Chinchilla's answer overturned the prevailing wisdom: most large models of the era (including GPT-3) were badly <em>under-trained</em>. The compute-optimal rule of thumb is to scale parameters and tokens <em>together</em>, roughly <strong>20 tokens per parameter</strong>. The curve below is a Chinchilla-style loss surface: pick a compute budget, then slide your allocation and watch how far your loss sits from the optimum. (As the Llama case study shows, you sometimes <em>deliberately</em> ignore this and over-train a small model — because Chinchilla optimizes training cost, not the inference cost of serving the model forever.)</p>
+      </div>
+      <div class="viz">
+        <p class="viz-title">Compute-optimal allocation (Chinchilla-style)</p>
+        <div class="controls">
+          <div class="control">
+            <label for="scC">Compute budget <output id="scCV">1e21</output> FLOPs</label>
+            <input type="range" id="scC" min="19" max="25" step="0.1" value="21">
+          </div>
+          <div class="control">
+            <label for="scSplit">Your split: params vs data <output id="scSplitV">balanced</output></label>
+            <input type="range" id="scSplit" min="0" max="100" value="50">
+          </div>
+        </div>
+        <canvas id="scCanvas"></canvas>
+        <div class="readout" id="scRead"></div>
+      </div>
+    </section>
+
+    <!-- 4 ============================================================ -->
+    <section class="topic" id="data">
+      <div class="topic-head"><span class="topic-num">04</span><h3>Training Data Engineering</h3></div>
+      <p class="lead">Raw web crawl is mostly junk. Quality comes from aggressive filtering: dedup, language ID, quality classifiers, toxicity removal. Each filter throws away a slice. Toggle filters and watch how little survives — and why that little is gold.</p>
+      <div class="prose">
+        <p>"Just train on the internet" is a trap. Raw web crawl (like Common Crawl) is dominated by boilerplate, spam, SEO sludge, adult content, broken markup and endless near-duplicates. Train on it directly and the model wastes capacity learning junk. The single biggest lever on model quality that <em>isn't</em> just "more compute" is <strong>data quality</strong> — and that means throwing most of the data away.</p>
+        <p>A modern data pipeline is a brutal funnel of stages: <strong>deduplication</strong> (exact and fuzzy — duplicated text causes memorization and wastes compute), <strong>language identification</strong> to hit the target mix, <strong>quality classifiers</strong> (often a small model trained to recognize "good" pages like Wikipedia or textbooks), heuristic filters (line length, symbol ratios, bad words), and <strong>toxicity / PII removal</strong>. Teams also tune the <em>mixture</em> — how much code, math, multilingual text — and "anneal" on especially high-quality data near the end of training. Each filter below removes a slice; toggle them and watch how little of the original 100 PB survives, and remember: that surviving sliver is what makes the model smart.</p>
+      </div>
+      <div class="viz">
+        <p class="viz-title">The data funnel — 100 PB of raw crawl in</p>
+        <div class="pill-group" id="dataPills" style="margin-bottom:1rem">
+          <button class="pill on" data-cut="0.55">Dedup −55%</button>
+          <button class="pill on" data-cut="0.40">Language filter −40%</button>
+          <button class="pill on" data-cut="0.50">Quality classifier −50%</button>
+          <button class="pill on" data-cut="0.20">Toxicity / PII −20%</button>
+        </div>
+        <div class="bars" id="dataBars"></div>
+        <div class="readout" id="dataRead"></div>
+      </div>
+    </section>
+
+    <!-- 5 ============================================================ -->
+    <section class="topic" id="infra">
+      <div class="topic-head"><span class="topic-num">05</span><h3>Training Infrastructure &amp; Systems</h3></div>
+      <p class="lead">No single GPU holds a frontier model. You split the work three ways: <strong>data</strong> parallel (copies of the model on different batches), <strong>tensor</strong> parallel (one layer sliced across GPUs), and <strong>pipeline</strong> parallel (different layers on different GPUs). Toggle them.</p>
+      <div class="prose">
+        <p>A 405B-parameter model in 16-bit precision needs ~810 GB just to <em>store</em> its weights — and training needs several times that for gradients and optimizer state. No single GPU (80 GB on an H100) comes close. So frontier training is fundamentally a <strong>distributed systems</strong> problem: how do you split one model across thousands of chips and keep them all busy without drowning in communication?</p>
+        <p>The answer is to combine several kinds of parallelism. <strong>Data parallel</strong>: every GPU holds a full model copy, processes a different slice of the batch, and gradients are averaged — this scales throughput. <strong>Tensor parallel</strong>: a single layer's matrices are sliced across GPUs that compute one layer together — needed when one layer is too big for one chip. <strong>Pipeline parallel</strong>: different <em>layers</em> live on different GPUs, and activations flow down like an assembly line. Llama 3 added a fourth, <strong>context parallel</strong>, to split very long sequences. The art is balancing them so expensive inter-GPU communication is hidden behind computation. Toggle the modes below to see how the same 16-GPU cluster gets carved up; real runs use all of these at once.</p>
+      </div>
+      <div class="viz">
+        <p class="viz-title">3-D parallelism on a 16-GPU cluster</p>
+        <div class="pill-group" style="margin-bottom:1rem">
+          <button class="pill on" data-p="data">Data parallel</button>
+          <button class="pill" data-p="tensor">Tensor parallel</button>
+          <button class="pill" data-p="pipeline">Pipeline parallel</button>
+        </div>
+        <canvas id="infraCanvas"></canvas>
+        <div class="readout" id="infraRead"></div>
+      </div>
+    </section>
+
+    <!-- 6 ============================================================ -->
+    <section class="topic" id="advanced">
+      <div class="topic-head"><span class="topic-num">06</span><h3>Advanced Pretraining Objectives</h3></div>
+      <p class="lead">Next-token prediction (causal LM) is the default, but it isn't the only game. Masked LM hides random tokens; span corruption drops whole chunks; prefix-LM sees a clean prefix then generates. Pick an objective to see what the model is asked to recover.</p>
+      <div class="prose">
+        <p>The choice of <em>what to predict</em> shapes what the model is good at. <strong>Causal LM</strong> (GPT, Llama) predicts each next token left-to-right — perfect for generation, since that's exactly what generation is. <strong>Masked LM</strong> (BERT) instead hides ~15% of tokens and predicts them using context from <em>both</em> sides; this builds rich bidirectional understanding but can't generate text fluently, which is why BERT-style models power search and classification rather than chatbots.</p>
+        <p>In between sit hybrids. <strong>Span corruption</strong> (T5) drops whole contiguous chunks and asks the model to regenerate them, framing everything as text-to-text. <strong>Prefix-LM</strong> lets the model see a clean prefix bidirectionally, then generates the rest autoregressively. The field has largely converged on causal LM for general-purpose models — it's simple, it scales, and it directly matches the generation task — but knowing the alternatives explains why different model families behave so differently. Pick an objective below to see exactly which tokens get hidden and what the model must recover.</p>
+      </div>
+      <div class="viz">
+        <p class="viz-title">What does each objective hide?</p>
+        <div class="pill-group" id="objPills" style="margin-bottom:1rem">
+          <button class="pill on" data-o="clm">Causal LM (GPT)</button>
+          <button class="pill" data-o="mlm">Masked LM (BERT)</button>
+          <button class="pill" data-o="span">Span corruption (T5)</button>
+          <button class="pill" data-o="prefix">Prefix-LM</button>
+        </div>
+        <div class="tokens" id="objTokens" style="font-size:1rem"></div>
+        <div class="readout" id="objRead"></div>
+      </div>
+    </section>
+
+    <!-- 7 ============================================================ -->
+    <section class="topic" id="eval">
+      <div class="topic-head"><span class="topic-num">07</span><h3>Evaluation During Pretraining</h3></div>
+      <p class="lead">You can't wait until the end to know if training is working. Teams watch <strong>loss</strong> and <strong>perplexity</strong> curves live, plus periodic benchmark probes. Scrub through training and watch the loss fall — and the sample text sharpen.</p>
+      <div class="prose">
+        <p>A pretraining run takes weeks to months and costs millions; you cannot afford to discover at the end that something was broken. So teams instrument everything and watch it live. The primary signal is the <strong>training and validation loss curve</strong> — it should fall fast then flatten into a smooth power-law decay. A sudden spike means trouble (a bad data shard, numerical instability, a hardware fault); a validation loss that diverges from training loss means overfitting. <strong>Perplexity</strong> (just <code>exp(loss)</code>) gives the same information in more intuitive units.</p>
+        <p>Loss alone doesn't tell you if the model is becoming <em>useful</em>, so runs also fire periodic <strong>benchmark probes</strong> — MMLU for knowledge, GSM8K for math, HumanEval for code — to catch capabilities emerging. Some abilities appear suddenly at scale ("emergent" behaviours), which downstream benchmarks reveal but the smooth loss curve hides. Teams also eyeball raw sample generations, which is genuinely informative: early in training the text is gibberish, then locally grammatical, then globally coherent. Scrub the slider below to watch loss fall, perplexity drop, and the sample text sharpen from noise into prose.</p>
+      </div>
+      <div class="viz">
+        <p class="viz-title">Training progress</p>
+        <div class="controls">
+          <div class="control">
+            <label for="evStep">Training step <output id="evStepV">0</output> / 300k</label>
+            <input type="range" id="evStep" min="0" max="300" value="40">
+          </div>
+        </div>
+        <canvas id="evCanvas"></canvas>
+        <div class="kv-grid">
+          <div class="kv-card"><div class="k">Train loss</div><div class="v" id="evLoss">—</div></div>
+          <div class="kv-card"><div class="k">Perplexity</div><div class="v" id="evPpl">—</div></div>
+          <div class="kv-card"><div class="k">Tokens seen</div><div class="v" id="evTok">—</div></div>
+        </div>
+        <div class="readout" id="evSample"></div>
+      </div>
+    </section>
+
+    <!-- 8 ============================================================ -->
+    <section class="topic casestudy" id="llama">
+      <div class="topic-head"><span class="topic-num">08</span><h3>Case Study — Llama 3</h3></div>
+      <p class="lead">If GPT-2 proved scaling works, Meta's <strong>Llama 3</strong> is the clearest public demonstration of doing it at frontier scale. It's a textbook application of everything in this module — a dense decoder-only Transformer with RoPE, grouped-query attention and SwiGLU, trained on ~15 trillion tokens — and, uniquely, Meta published both the weights and a 90-page paper explaining exactly how. This is the most transparent frontier-model recipe we have.</p>
+
+      <div class="prose">
+        <h4>The open-weights bet</h4>
+        <p>Meta's defining choice is to <strong>release the weights</strong> publicly (under a community license) rather than serve a model only behind an API — a deliberate contrast with OpenAI, Anthropic and Google. The Llama family is the spine of the open-LLM ecosystem:</p>
+      </div>
+
+      <div class="timeline">
+        <div class="event"><div class="when">Feb 24, 2023</div><p class="what"><strong>Llama 1</strong> — 7B–65B, research-only. Its weights <em>leaked</em> via torrent days later, accidentally seeding the entire open-LLM movement.</p></div>
+        <div class="event"><div class="when">Jul 18, 2023</div><p class="what"><strong>Llama 2</strong> — 7B/13B/70B on 2T tokens, with the first <em>commercial</em> license.</p></div>
+        <div class="event"><div class="when">Apr 18, 2024</div><p class="what"><strong>Llama 3</strong> — 8B and 70B, ~15T tokens, new 128K-token tokenizer. A 400B+ model announced as "still training."</p></div>
+        <div class="event"><div class="when">Jul 23, 2024</div><p class="what"><strong>Llama 3.1</strong> — adds the <strong>405B</strong> flagship, the first openly released frontier-class model; context extended to <strong>128K</strong> across all sizes. The "Herd of Models" paper documents everything.</p></div>
+      </div>
+
+      <div class="prose">
+        <h4>Architecture — boringly standard, on purpose</h4>
+        <p>All three sizes are <strong>dense, decoder-only Transformers</strong> — explicitly <em>not</em> mixture-of-experts. The paper says this plainly: a standard dense architecture was chosen "to maximize training stability," favouring engineering simplicity at 16,000-GPU scale over the theoretical efficiency of fancier designs. The pieces are all things you've now seen:</p>
+        <ul>
+          <li><strong>RoPE</strong> rotary positions, with the base frequency cranked to <code>500,000</code> so the model can extrapolate from an 8K to a 128K context.</li>
+          <li><strong>Grouped-Query Attention (GQA)</strong> with just <code>8</code> KV heads on <em>every</em> size (even 8B) — this shrinks the key/value cache during decoding, the thing that dominates long-context serving cost.</li>
+          <li><strong>SwiGLU</strong> activations, <strong>RMSNorm</strong>, and <strong>no bias terms</strong> — the modern efficiency stack.</li>
+          <li>A <strong>128,256-token tokenizer</strong> (tiktoken-based) replacing Llama 2's 32K SentencePiece one — ~15% fewer tokens per text, so cheaper training <em>and</em> inference.</li>
+        </ul>
+
+        <h4>The data: ~15 trillion tokens, heavily filtered</h4>
+        <p>Pretraining used about <strong>15T tokens</strong> (15.6T in the 3.1 paper) — roughly <strong>7× Llama 2</strong> and ~4× more code. All from publicly available sources, with a final mix of roughly <strong>50% general knowledge, 25% math &amp; reasoning, 17% code, 8% multilingual</strong> (30+ languages). The curation pipeline is the §4 funnel made real: heuristic + NSFW filters, semantic dedup, and <strong>model-based quality classifiers trained on labels from Llama&nbsp;2</strong> — using the previous model to grade the next model's diet. Near the end they <strong>anneal</strong>: upsample a small amount of very-high-quality math/code, which alone lifted the 8B's GSM8K score by 24%.</p>
+      </div>
+
+      <div class="viz">
+        <p class="viz-title">Llama 3 family</p>
+        <div class="pill-group" id="llPills" style="margin-bottom:1rem">
+          <button class="pill on" data-m="8">8B</button>
+          <button class="pill" data-m="70">70B</button>
+          <button class="pill" data-m="405">405B</button>
+        </div>
+        <div class="kv-grid" id="llCards"></div>
+        <div class="tag" style="margin-top:1.2rem">relative training compute</div>
+        <div class="bars" id="llBars"></div>
+        <div class="readout">All three share the same recipe and the same ~15T-token diet — the only knobs that change are width, depth, and how many GPU-hours you can afford. Architecture highlights: <code>RoPE</code> positions, <code>GQA</code> attention, <code>SwiGLU</code> FFN, <code>128K</code> vocab.</div>
+      </div>
+
+      <div class="prose">
+        <h4>Training at the bleeding edge of hardware</h4>
+        <p>The 405B was trained on up to <strong>16,000 NVIDIA H100 GPUs</strong>, drawn from two custom 24K-GPU clusters, burning <strong>3.8×10²⁵ FLOPs</strong> — nearly <strong>50× the largest Llama 2 run</strong> — for a herd total of <strong>39.3 million GPU-hours</strong>. To fit a 405B model across that many chips, Meta used <strong>4-D parallelism</strong>: tensor + pipeline + context + data parallel, all at once (the §5 ideas, combined).</p>
+      </div>
+
+      <div class="callout">
+        <span class="callout-label">The reality of frontier-scale training</span>
+        <p>Over one 54-day stretch, the run hit <strong>466 interruptions — 419 of them unexpected</strong>, ~78% traced to hardware (GPUs and HBM3 memory failing). That's roughly <strong>one failure every 3 hours</strong>. Training a frontier model is as much a feat of fault-tolerant systems engineering — checkpointing, auto-recovery — as it is of machine learning.</p>
+      </div>
+
+      <div class="prose">
+        <h4>Past Chinchilla, on purpose</h4>
+        <p>Recall the scaling laws in §3: the compute-optimal recipe puts ~20 tokens per parameter, so an 8B model "should" see ~200B tokens. Meta trained the 8B on <strong>~15T</strong> — almost 75× past compute-optimal. Why deliberately "waste" training compute? Because they optimized for <strong>inference cost over the model's whole lifetime</strong>: a smaller model trained far too long is cheaper to <em>serve</em> forever, and Meta found the 8B kept improving log-linearly even past 15T tokens. The 405B's own size/data budget, by contrast, <em>was</em> set to be compute-optimal for Meta's training envelope.</p>
+
+        <h4>Post-training: SFT → rejection sampling → DPO</h4>
+        <p>After pretraining and a six-stage extension of context out to 128K, alignment runs over <strong>multiple iterative rounds</strong> of supervised fine-tuning (much of it on synthetic, rejection-sampled data) and <strong>Direct Preference Optimization</strong>. Notably Meta chose <strong>DPO over PPO-style RLHF</strong> — it needed less compute at this scale and performed better on instruction-following. (That whole pipeline is Module 03.)</p>
+      </div>
+
+      <div class="callout">
+        <span class="callout-label">Why Llama 3 is a landmark</span>
+        <p>The 405B was the first time a model in the GPT-4 / Claude-3.5-Sonnet quality tier shipped with <strong>open weights</strong> — and with a paper detailing the data mix, the parallelism, even the failure rates. For anyone learning how frontier models are actually made, it's the single most complete public document that exists.</p>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="foot">
+    <span>LLM Fundamentals · Module 02 — Pre-Training</span>
+    <span>Interactive demos · vanilla JS, no dependencies</span>
+  </footer>
+
+</div>
+
+<script src="course.js"></script>
+<script>
+/* ============================ 1. Overview ============================ */
+(function () {
+  const b = {
+    data: 'Web text — trillions of tokens of scraped, filtered text. The raw fuel.',
+    batch: 'Batch — millions of tokens packed together so GPUs stay busy.',
+    forward: 'Forward — the model predicts the next token at every position at once.',
+    loss: 'Loss — cross-entropy between predictions and the real next tokens.',
+    back: 'Backprop — gradients flow back, the optimizer updates every weight. Repeat.'
+  };
+  const read = document.getElementById('ovRead'); const def = read.innerHTML;
+  document.querySelectorAll('#ovFlow .flow-box').forEach(function (el) {
+    el.addEventListener('mouseenter', function () { read.textContent = b[el.dataset.k]; });
+    el.addEventListener('mouseleave', function () { read.innerHTML = def; });
+  });
+})();
+
+/* ============================ 2. Cross-entropy ============================ */
+(function () {
+  const slider = document.getElementById('ceP'), val = document.getElementById('cePV');
+  const canvas = document.getElementById('ceCanvas'), read = document.getElementById('ceRead');
+  function draw() {
+    const p = +slider.value; val.textContent = p.toFixed(2);
+    const ctx = CK.fitCanvas(canvas, 260);
+    const W = ctx._w, H = ctx._h, pad = 38;
+    ctx.clearRect(0, 0, W, H);
+    const ink = CK.cssVar('--ink'), muted = CK.cssVar('--muted'),
+      accent = CK.cssVar('--accent'), border = CK.cssVar('--border');
+    const maxL = -Math.log(0.02);
+    const X = function (pp) { return pad + pp * (W - pad - 12); };
+    const Y = function (l) { return H - pad - (l / maxL) * (H - pad - 12); };
+    // axes
+    ctx.strokeStyle = border; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(pad, 12); ctx.lineTo(pad, H - pad); ctx.lineTo(W - 12, H - pad); ctx.stroke();
+    ctx.fillStyle = muted; ctx.font = '11px Inter, sans-serif';
+    ctx.textAlign = 'center'; ctx.fillText('P(correct token) →', W / 2, H - 8);
+    ctx.save(); ctx.translate(13, H / 2); ctx.rotate(-Math.PI / 2); ctx.fillText('loss  −log(p)', 0, 0); ctx.restore();
+    // curve
+    ctx.strokeStyle = accent; ctx.lineWidth = 2; ctx.beginPath();
+    for (let i = 0; i <= 100; i++) { const pp = 0.02 + (i / 100) * 0.97; const l = -Math.log(pp);
+      const x = X(pp), y = Y(l); if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y); }
+    ctx.stroke();
+    // marker
+    const l = -Math.log(p), mx = X(p), my = Y(l);
+    ctx.strokeStyle = border; ctx.setLineDash([3, 3]);
+    ctx.beginPath(); ctx.moveTo(mx, H - pad); ctx.lineTo(mx, my); ctx.lineTo(pad, my); ctx.stroke(); ctx.setLineDash([]);
+    ctx.fillStyle = ink; ctx.beginPath(); ctx.arc(mx, my, 5, 0, Math.PI * 2); ctx.fill();
+    read.innerHTML = 'At p = <b>' + p.toFixed(2) + '</b>, loss = −log(' + p.toFixed(2) + ') = <b>' + l.toFixed(2) +
+      '</b> nats. ' + (p > 0.85 ? 'Confident & correct → almost no penalty.' :
+        (p < 0.2 ? 'The model basically missed → the penalty explodes.' : 'Middling confidence → moderate penalty.')) +
+      ' Random guessing over 50k tokens would cost ≈ <b>10.8</b>.';
+  }
+  slider.addEventListener('input', draw);
+  window.addEventListener('resize', draw); window.addEventListener('themechange', draw);
+  draw();
+})();
+
+/* ============================ 3. Scaling laws ============================ */
+(function () {
+  // Chinchilla-ish: L = E + A/N^a + B/D^b ; compute C = 6 N D
+  const E = 1.69, A = 406.4, B = 410.7, a = 0.34, b = 0.28;
+  const cS = document.getElementById('scC'), cV = document.getElementById('scCV');
+  const sS = document.getElementById('scSplit'), sV = document.getElementById('scSplitV');
+  const canvas = document.getElementById('scCanvas'), read = document.getElementById('scRead');
+  function loss(N, D) { return E + A / Math.pow(N, a) + B / Math.pow(D, b); }
+  function draw() {
+    const C = Math.pow(10, +cS.value);
+    cV.textContent = (+cS.value).toFixed(1).replace('.0', '') ? '1e' + (+cS.value).toFixed(1) : '';
+    cV.textContent = '1e' + (+cS.value).toFixed(1);
+    const split = +sS.value / 100;
+    sV.textContent = split < 0.4 ? 'data-heavy' : (split > 0.6 ? 'param-heavy' : 'balanced');
+    const ctx = CK.fitCanvas(canvas, 280);
+    const W = ctx._w, H = ctx._h, pad = 40;
+    ctx.clearRect(0, 0, W, H);
+    const muted = CK.cssVar('--muted'), accent = CK.cssVar('--accent'),
+      border = CK.cssVar('--border'), ink = CK.cssVar('--ink');
+    // sweep param fraction f: N = sqrt(C/6) scaled, D = C/(6N). Use f to move N along.
+    const pts = [];
+    let best = { l: Infinity };
+    for (let i = 0; i <= 200; i++) {
+      const f = i / 200; // fraction of "size" toward params
+      // N ranges so that C=6ND holds: pick N = 10^(... ) spanning
+      const logN = 6 + f * 6; // 1e6 .. 1e12 params
+      const N = Math.pow(10, logN);
+      const D = C / (6 * N);
+      if (D < 1e6) continue;
+      const l = loss(N, D);
+      pts.push({ f: f, N: N, D: D, l: l });
+      if (l < best.l) best = { f: f, N: N, D: D, l: l };
+    }
+    const lMin = Math.min.apply(null, pts.map(function (p) { return p.l; }));
+    const lMax = Math.max.apply(null, pts.map(function (p) { return p.l; }));
+    const X = function (f) { return pad + f * (W - pad - 12); };
+    const Y = function (l) { return 12 + (l - lMin) / (lMax - lMin + 1e-9) * (H - pad - 12); };
+    ctx.strokeStyle = border; ctx.beginPath();
+    ctx.moveTo(pad, 12); ctx.lineTo(pad, H - pad); ctx.lineTo(W - 12, H - pad); ctx.stroke();
+    ctx.fillStyle = muted; ctx.font = '11px Inter'; ctx.textAlign = 'center';
+    ctx.fillText('← more data        more parameters →', W / 2, H - 8);
+    ctx.save(); ctx.translate(14, H / 2); ctx.rotate(-Math.PI / 2); ctx.fillText('predicted loss', 0, 0); ctx.restore();
+    // curve
+    ctx.strokeStyle = accent; ctx.lineWidth = 2; ctx.beginPath();
+    pts.forEach(function (p, i) { const x = X(p.f), y = Y(p.l); if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y); });
+    ctx.stroke();
+    // optimum marker
+    ctx.fillStyle = ink; ctx.beginPath(); ctx.arc(X(best.f), Y(best.l), 5, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = muted; ctx.textAlign = 'center'; ctx.fillText('optimum', X(best.f), Y(best.l) - 10);
+    // user marker
+    const uf = split;
+    const uN = Math.pow(10, 6 + uf * 6), uD = C / (6 * uN), ul = loss(uN, uD);
+    ctx.strokeStyle = accent; ctx.setLineDash([3, 3]);
+    ctx.beginPath(); ctx.moveTo(X(uf), 12); ctx.lineTo(X(uf), H - pad); ctx.stroke(); ctx.setLineDash([]);
+    function fmt(n) { return n >= 1e9 ? (n / 1e9).toFixed(1) + 'B' : (n >= 1e6 ? (n / 1e6).toFixed(0) + 'M' : n.toFixed(0)); }
+    const off = ((ul - best.l) / best.l * 100);
+    read.innerHTML = 'Your split → <b>' + fmt(uN) + '</b> params on <b>' + fmt(uD) + '</b> tokens, predicted loss <b>' + ul.toFixed(3) +
+      '</b>. The compute-optimal point sits at <b>' + fmt(best.N) + '</b> params / <b>' + fmt(best.D) + '</b> tokens (loss ' + best.l.toFixed(3) + '). ' +
+      (off < 1 ? 'You are basically optimal.' : 'You are leaving <b>' + off.toFixed(1) + '%</b> of loss on the table — rebalance toward the dot.');
+  }
+  [cS, sS].forEach(function (s) { s.addEventListener('input', draw); });
+  window.addEventListener('resize', draw); window.addEventListener('themechange', draw);
+  draw();
+})();
+
+/* ============================ 4. Data funnel ============================ */
+(function () {
+  const pills = Array.from(document.querySelectorAll('#dataPills .pill'));
+  const bars = document.getElementById('dataBars');
+  const read = document.getElementById('dataRead');
+  const START = 100; // PB
+  function draw() {
+    let remaining = START;
+    const stages = [{ label: 'raw crawl', val: START }];
+    pills.forEach(function (p) {
+      if (p.classList.contains('on')) {
+        remaining *= (1 - parseFloat(p.dataset.cut));
+        stages.push({ label: p.textContent.split(' −')[0].toLowerCase(), val: remaining });
+      }
+    });
+    bars.innerHTML = '';
+    stages.forEach(function (s) {
+      const row = document.createElement('div'); row.className = 'bar-row';
+      row.innerHTML = '<span class="bar-label">' + s.label + '</span>' +
+        '<span class="bar-track"><span class="bar-fill" style="width:' + (s.val / START * 100).toFixed(1) + '%"></span></span>' +
+        '<span class="bar-val">' + s.val.toFixed(1) + ' PB</span>';
+      bars.appendChild(row);
+    });
+    read.innerHTML = 'From <b>' + START + ' PB</b> of raw crawl, <b>' + remaining.toFixed(1) + ' PB</b> survives (<b>' +
+      (remaining / START * 100).toFixed(1) + '%</b>). The thrown-away 95%+ is duplicates, boilerplate, non-target languages and junk — keeping it would <em>hurt</em> the model.';
+  }
+  pills.forEach(function (p) { p.addEventListener('click', function () { p.classList.toggle('on'); draw(); }); });
+  draw();
+})();
+
+/* ============================ 5. Infra parallelism ============================ */
+(function () {
+  const canvas = document.getElementById('infraCanvas');
+  const read = document.getElementById('infraRead');
+  const pills = Array.from(document.querySelectorAll('#infra .pill'));
+  const modes = { data: true, tensor: false, pipeline: false };
+  const desc = {
+    data: 'Each GPU holds a full copy of the model and processes a different slice of the batch; gradients are averaged. Scales throughput.',
+    tensor: 'A single layer\'s matrices are sliced across GPUs that compute together. Needed when one layer is too big for one GPU.',
+    pipeline: 'Different layers live on different GPUs; activations flow down the pipeline like an assembly line.'
+  };
+  function draw() {
+    const ctx = CK.fitCanvas(canvas, 280);
+    const W = ctx._w, H = ctx._h;
+    ctx.clearRect(0, 0, W, H);
+    const accent = CK.cssVar('--accent'), border = CK.cssVar('--border'),
+      muted = CK.cssVar('--muted'), ink = CK.cssVar('--ink'), soft = CK.cssVar('--accent-soft');
+    const cols = 4, rows = 4, pad = 20;
+    const cw = (W - 2 * pad) / cols, ch = (H - 2 * pad) / rows;
+    ctx.font = '9px Courier New, monospace';
+    for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) {
+      const x = pad + c * cw, y = pad + r * ch;
+      // colouring rules
+      let fill = 'transparent', lab = 'GPU';
+      if (modes.pipeline) { // rows = pipeline stage
+        const hue = ['L1-3', 'L4-6', 'L7-9', 'L10-12'][r];
+        fill = soft; lab = hue;
+      }
+      if (modes.tensor) { // columns share a layer slice
+        lab = (modes.pipeline ? lab + ' ' : '') + 'shard ' + (c + 1);
+      }
+      if (modes.data && !modes.pipeline) { // rows are replicas
+        lab = 'replica ' + (r + 1);
+        fill = soft;
+      }
+      ctx.fillStyle = fill; ctx.fillRect(x + 3, y + 3, cw - 6, ch - 6);
+      ctx.strokeStyle = (modes.tensor && c < cols - 1) ? accent : border;
+      ctx.lineWidth = (modes.tensor) ? 1.6 : 1;
+      ctx.strokeRect(x + 3, y + 3, cw - 6, ch - 6);
+      ctx.fillStyle = muted; ctx.textAlign = 'center';
+      ctx.fillText('G' + (r * cols + c), x + cw / 2, y + ch / 2 - 2);
+      ctx.fillStyle = ink; ctx.fillText(lab, x + cw / 2, y + ch / 2 + 10);
+    }
+    // arrows for pipeline
+    if (modes.pipeline) {
+      ctx.strokeStyle = accent; ctx.lineWidth = 1.5;
+      for (let r = 0; r < rows - 1; r++) {
+        const y = pad + (r + 1) * ch;
+        ctx.beginPath(); ctx.moveTo(W / 2, y - 4); ctx.lineTo(W / 2, y + 2); ctx.stroke();
+      }
+    }
+    const on = Object.keys(modes).filter(function (k) { return modes[k]; });
+    read.innerHTML = '<b>' + (on.length ? on.join(' + ') : 'none') + '</b> active. ' +
+      on.map(function (k) { return desc[k]; }).join(' ') +
+      ' Real frontier runs combine all three at once across tens of thousands of GPUs.';
+  }
+  pills.forEach(function (p) {
+    p.addEventListener('click', function () {
+      modes[p.dataset.p] = !modes[p.dataset.p]; p.classList.toggle('on'); draw();
+    });
+  });
+  window.addEventListener('resize', draw); window.addEventListener('themechange', draw);
+  draw();
+})();
+
+/* ============================ 6. Advanced objectives ============================ */
+(function () {
+  const sentence = ['The', 'quick', 'brown', 'fox', 'jumps', 'over', 'the', 'lazy', 'dog'];
+  const box = document.getElementById('objTokens');
+  const read = document.getElementById('objRead');
+  const pills = Array.from(document.querySelectorAll('#objPills .pill'));
+  const rng = CK.rng(42);
+  const masks = sentence.map(function () { return rng(); });
+  const info = {
+    clm: 'Causal LM — predict each next token from everything to its left. The whole sequence is the label, shifted by one. Used by GPT/LLaMA.',
+    mlm: 'Masked LM — ~15% of tokens are hidden and the model fills them using both sides. Great for understanding, not for generation. Used by BERT.',
+    span: 'Span corruption — contiguous chunks are replaced by a single sentinel; the model regenerates the missing span. Used by T5.',
+    prefix: 'Prefix-LM — a clean prefix is fully visible; everything after it is generated autoregressively. A hybrid of the two worlds.'
+  };
+  function render(mode) {
+    box.innerHTML = '';
+    const splitAt = Math.floor(sentence.length * 0.55);
+    let spanStart = 3, spanLen = 2;
+    sentence.forEach(function (w, i) {
+      const chip = document.createElement('span'); chip.className = 'token-chip';
+      let txt = w, hide = false, faded = false;
+      if (mode === 'clm') { faded = (i === sentence.length - 1); txt = faded ? '?' : w; }
+      else if (mode === 'mlm') { hide = masks[i] < 0.25; txt = hide ? '[MASK]' : w; }
+      else if (mode === 'span') { if (i >= spanStart && i < spanStart + spanLen) { if (i === spanStart) { txt = '⟦X⟧'; } else { return; } hide = true; } }
+      else if (mode === 'prefix') { faded = i >= splitAt; txt = faded ? '·' : w; }
+      if (hide) { chip.style.background = 'var(--accent)'; chip.style.color = '#fff'; }
+      if (faded) { chip.style.opacity = '0.4'; chip.style.borderStyle = 'dashed'; }
+      chip.textContent = txt;
+      box.appendChild(chip);
+    });
+    read.textContent = info[mode];
+  }
+  pills.forEach(function (p) {
+    p.addEventListener('click', function () {
+      pills.forEach(function (q) { q.classList.remove('on'); }); p.classList.add('on'); render(p.dataset.o);
+    });
+  });
+  render('clm');
+})();
+
+/* ============================ 7. Eval curves ============================ */
+(function () {
+  const slider = document.getElementById('evStep'), val = document.getElementById('evStepV');
+  const canvas = document.getElementById('evCanvas');
+  const samples = [
+    [0, '"asdf the the of of in . , the"'],
+    [40, '"The cat sat on the the mat and was go"'],
+    [120, '"The cat sat on the mat. It was a warm"'],
+    [220, '"The cat sat on the mat, watching rain streak the window."'],
+    [300, '"The cat sat on the mat, watching rain streak the window, and dozed."']
+  ];
+  function lossAt(step) { return 1.7 + 8.5 * Math.exp(-step / 55) + 0.04 * Math.sin(step / 7); }
+  function draw() {
+    const step = +slider.value; val.textContent = step + 'k';
+    const ctx = CK.fitCanvas(canvas, 240);
+    const W = ctx._w, H = ctx._h, pad = 38;
+    ctx.clearRect(0, 0, W, H);
+    const accent = CK.cssVar('--accent'), border = CK.cssVar('--border'),
+      muted = CK.cssVar('--muted'), ink = CK.cssVar('--ink');
+    const X = function (s) { return pad + (s / 300) * (W - pad - 12); };
+    const lMax = lossAt(0), lMin = lossAt(300);
+    const Y = function (l) { return 12 + (1 - (l - lMin) / (lMax - lMin)) * (H - pad - 12) * -1 + (H - pad - 12); };
+    const Yp = function (l) { return 12 + (l - lMin) / (lMax - lMin) * (H - pad - 12); };
+    ctx.strokeStyle = border; ctx.beginPath(); ctx.moveTo(pad, 12); ctx.lineTo(pad, H - pad); ctx.lineTo(W - 12, H - pad); ctx.stroke();
+    ctx.fillStyle = muted; ctx.font = '11px Inter'; ctx.textAlign = 'center';
+    ctx.fillText('training steps →', W / 2, H - 8);
+    // full curve faint, completed curve solid
+    ctx.strokeStyle = border; ctx.lineWidth = 1.5; ctx.beginPath();
+    for (let s = 0; s <= 300; s += 2) { const x = X(s), y = Yp(lossAt(s)); if (s === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y); }
+    ctx.stroke();
+    ctx.strokeStyle = accent; ctx.lineWidth = 2.4; ctx.beginPath();
+    for (let s = 0; s <= step; s += 2) { const x = X(s), y = Yp(lossAt(s)); if (s === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y); }
+    ctx.stroke();
+    const cl = lossAt(step);
+    ctx.fillStyle = ink; ctx.beginPath(); ctx.arc(X(step), Yp(cl), 5, 0, Math.PI * 2); ctx.fill();
+    // cards
+    document.getElementById('evLoss').textContent = cl.toFixed(2);
+    document.getElementById('evPpl').textContent = Math.exp(cl).toFixed(0);
+    document.getElementById('evTok').innerHTML = (step / 300 * 15).toFixed(1) + 'T <small>tokens</small>';
+    // sample
+    let s = samples[0];
+    for (const cand of samples) if (step >= cand[0]) s = cand;
+    document.getElementById('evSample').innerHTML = '<b>Sample generation at this step:</b><br>' + s[1] +
+      '<br><span style="color:var(--muted)">Perplexity ' + Math.exp(cl).toFixed(0) +
+      ' means the model is on average this "surprised" per token — lower is better.</span>';
+  }
+  slider.addEventListener('input', draw);
+  window.addEventListener('resize', draw); window.addEventListener('themechange', draw);
+  draw();
+})();
+
+/* ============================ 8. LLaMA 3 ============================ */
+(function () {
+  const data = {
+    '8':   { layers: 32, dmodel: 4096, ffn: 14336, heads: 32, kv: 8,  lr: '3e-4',   params: '8B',   tokens: '15T', ctx: '128K', compute: 1 },
+    '70':  { layers: 80, dmodel: 8192, ffn: 28672, heads: 64, kv: 8,  lr: '1.5e-4', params: '70B',  tokens: '15T', ctx: '128K', compute: 8.7 },
+    '405': { layers: 126, dmodel: 16384, ffn: 53248, heads: 128, kv: 8, lr: '0.8e-4', params: '405B', tokens: '15.6T', ctx: '128K', compute: 50 }
+  };
+  const cards = document.getElementById('llCards');
+  const bars = document.getElementById('llBars');
+  const pills = Array.from(document.querySelectorAll('#llPills .pill'));
+  function show(m) {
+    const d = data[m];
+    cards.innerHTML =
+      card('Parameters', d.params) + card('Layers', d.layers) +
+      card('d_model', d.dmodel) + card('FFN dim', d.ffn) +
+      card('Q / KV heads', d.heads + ' / ' + d.kv) + card('Peak LR', d.lr) +
+      card('Train tokens', d.tokens) + card('Context', d.ctx);
+    bars.innerHTML = ['8', '70', '405'].map(function (k) {
+      const c = data[k].compute, max = 50;
+      return '<div class="bar-row"><span class="bar-label">' + data[k].params + '</span>' +
+        '<span class="bar-track"><span class="bar-fill" style="width:' + (c / max * 100) + '%' +
+        (k === m ? ';background:var(--ink)' : '') + '"></span></span>' +
+        '<span class="bar-val">' + c + '×</span></div>';
+    }).join('');
+  }
+  function card(k, v) { return '<div class="kv-card"><div class="k">' + k + '</div><div class="v" style="font-size:1.25rem">' + v + '</div></div>'; }
+  pills.forEach(function (p) {
+    p.addEventListener('click', function () {
+      pills.forEach(function (q) { q.classList.remove('on'); }); p.classList.add('on'); show(p.dataset.m);
+    });
+  });
+  show('8');
+})();
+</script>
+</body>
+</html>

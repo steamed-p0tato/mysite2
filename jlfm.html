@@ -1,0 +1,881 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>jLFM | JEPA Liquid Foundation Model</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,300;0,400;0,600;0,700;1,400&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #07080a;
+      --bg-panel: #0c0e12;
+      --bg-card: #101318;
+      --border: #1e242d;
+      --border-hi: #333d4b;
+      --text: #e6edf3;
+      --muted: #7d8590;
+      --dim: #484f58;
+      --amber: #f59e0b;
+      --amber-glow: rgba(245, 158, 11, 0.14);
+      --cyan: #22d3ee;
+      --cyan-glow: rgba(34, 211, 238, 0.12);
+      --green: #10b981;
+      --red: #ef4444;
+      --mono: 'JetBrains Mono', monospace;
+      --display: 'Space Grotesk', sans-serif;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background-color: var(--bg);
+      background-image:
+        linear-gradient(to right, rgba(255,255,255,0.02) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(255,255,255,0.02) 1px, transparent 1px);
+      background-size: 32px 32px;
+      color: var(--text);
+      font-family: var(--mono);
+      font-size: 14px;
+      line-height: 1.6;
+      overflow-x: hidden;
+    }
+
+    /* Subtle CRT scanline overlay */
+    body::after {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background: repeating-linear-gradient(
+        0deg,
+        rgba(0, 0, 0, 0.08) 0px,
+        rgba(0, 0, 0, 0.08) 1px,
+        transparent 1px,
+        transparent 2px
+      );
+      z-index: 999;
+    }
+
+    a { color: inherit; text-decoration: none; }
+
+    .container {
+      max-width: 1120px;
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+
+    /* --- TOP TELEMETRY BAR --- */
+    .topbar {
+      border-bottom: 1px solid var(--border);
+      background: rgba(7, 8, 10, 0.88);
+      backdrop-filter: blur(8px);
+      position: sticky;
+      top: 0;
+      z-index: 50;
+    }
+    .topbar-inner {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      height: 54px;
+      font-size: 12px;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+    }
+    .brand-prompt {
+      color: var(--amber);
+      background: var(--amber-glow);
+      border: 1px solid rgba(245, 158, 11, 0.35);
+      padding: 2px 8px;
+    }
+    .telemetry {
+      display: flex;
+      gap: 20px;
+      color: var(--muted);
+    }
+    .telemetry span b { color: var(--text); font-weight: 600; }
+    .dot-online {
+      display: inline-block;
+      width: 7px;
+      height: 7px;
+      background: var(--green);
+      border-radius: 50%;
+      box-shadow: 0 0 8px var(--green);
+      margin-right: 4px;
+    }
+    .nav-links {
+      display: flex;
+      gap: 18px;
+      color: var(--muted);
+    }
+    .nav-links a:hover { color: var(--amber); }
+
+    /* --- HERO SECTION --- */
+    .hero {
+      padding: 72px 0 56px;
+      border-bottom: 1px solid var(--border);
+    }
+    .shell-crumb {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 12px;
+      color: var(--amber);
+      margin-bottom: 20px;
+      border: 1px solid var(--border);
+      background: var(--bg-panel);
+      padding: 4px 12px;
+    }
+    .shell-crumb span.path { color: var(--muted); }
+    .hero h1 {
+      font-family: var(--display);
+      font-size: clamp(34px, 5.5vw, 60px);
+      line-height: 1.06;
+      letter-spacing: -0.02em;
+      text-transform: uppercase;
+      max-width: 880px;
+      margin-bottom: 22px;
+    }
+    .hero h1 .accent { color: var(--amber); }
+    .hero-sub {
+      color: var(--muted);
+      font-size: 15px;
+      max-width: 740px;
+      margin-bottom: 28px;
+    }
+
+    /* --- HERO BANNER (site eye graphic) --- */
+    .hero-visual {
+      margin: 0 0 28px;
+      max-width: 460px;
+      border: 1px solid var(--border);
+      background: var(--bg-panel);
+      padding: 5px;
+      opacity: 0.9;
+    }
+    .hero-visual img {
+      display: block;
+      width: 100%;
+      height: auto;
+      max-height: 190px;
+      aspect-ratio: 16 / 7;
+      object-fit: cover;
+      filter: saturate(0.9) contrast(1.02);
+    }
+    .hero-visual figcaption {
+      display: flex;
+      justify-content: space-between;
+      font-size: 10px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--dim);
+      padding: 8px 4px 2px;
+    }
+    .hero-visual figcaption b { color: var(--amber); font-weight: 600; }
+
+    .tag-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 32px;
+    }
+    .tag {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      padding: 4px 10px;
+      border: 1px solid var(--border-hi);
+      background: var(--bg-panel);
+      color: var(--text);
+    }
+    .tag.hi {
+      border-color: var(--amber);
+      color: var(--amber);
+      background: var(--amber-glow);
+    }
+    .cta-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px;
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 11px 20px;
+      font-family: var(--mono);
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      border: 1px solid var(--border-hi);
+      background: var(--bg-panel);
+      color: var(--text);
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .btn:hover {
+      border-color: var(--amber);
+      color: var(--amber);
+    }
+    .btn-primary {
+      background: var(--amber);
+      color: #07080a;
+      border-color: var(--amber);
+    }
+    .btn-primary:hover {
+      background: #fbbf24;
+      color: #07080a;
+      box-shadow: 0 0 20px rgba(245, 158, 11, 0.35);
+    }
+
+    /* --- SECTION HEADERS --- */
+    .section {
+      padding: 64px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .section-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      margin-bottom: 36px;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+    .section-label {
+      font-size: 11px;
+      color: var(--amber);
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      margin-bottom: 6px;
+    }
+    .section-title {
+      font-family: var(--display);
+      font-size: 28px;
+      text-transform: uppercase;
+      letter-spacing: -0.01em;
+    }
+    .section-note {
+      color: var(--muted);
+      font-size: 12px;
+      max-width: 400px;
+    }
+
+    /* --- 3-PILLAR PRODUCT GRID (JLD / JLC / JL-FPGA) --- */
+    .tri-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+    }
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      padding: 26px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      position: relative;
+      transition: border-color 0.15s ease;
+    }
+    .card:hover {
+      border-color: var(--border-hi);
+    }
+    .card-top-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 11px;
+      color: var(--muted);
+      margin-bottom: 18px;
+      padding-bottom: 12px;
+      border-bottom: 1px dashed var(--border);
+    }
+    .badge {
+      padding: 2px 8px;
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+    .badge.amber { background: var(--amber-glow); color: var(--amber); border: 1px solid rgba(245, 158, 11, 0.4); }
+    .badge.cyan  { background: var(--cyan-glow);  color: var(--cyan);  border: 1px solid rgba(34, 211, 238, 0.4); }
+    .badge.green { background: rgba(16, 185, 129, 0.12); color: var(--green); border: 1px solid rgba(16, 185, 129, 0.4); }
+
+    .card h3 {
+      font-family: var(--display);
+      font-size: 24px;
+      margin-bottom: 4px;
+      letter-spacing: -0.01em;
+    }
+    .card .subtitle {
+      font-size: 12px;
+      color: var(--amber);
+      margin-bottom: 14px;
+    }
+    .card p {
+      color: var(--muted);
+      font-size: 13px;
+      margin-bottom: 20px;
+    }
+    .feature-list {
+      list-style: none;
+      margin-bottom: 24px;
+      font-size: 12px;
+      color: var(--text);
+    }
+    .feature-list li {
+      margin-bottom: 8px;
+      color: var(--muted);
+    }
+    .feature-list li b {
+      color: var(--text);
+    }
+
+    .metrics-strip {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      border-top: 1px solid var(--border);
+      padding-top: 14px;
+      gap: 8px;
+    }
+    .metric-cell .val {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text);
+      display: block;
+    }
+    .metric-cell .lbl {
+      font-size: 10px;
+      color: var(--dim);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    /* --- TOPOLOGY / ARCHITECTURE OVERVIEW --- */
+    .topo-box {
+      background: var(--bg-panel);
+      border: 1px solid var(--border);
+      padding: 28px;
+      overflow-x: auto;
+    }
+    .ascii-flow {
+      font-family: var(--mono);
+      font-size: 12px;
+      line-height: 1.45;
+      color: var(--text);
+      white-space: pre;
+    }
+    .ascii-flow .hl-amber { color: var(--amber); font-weight: 700; }
+    .ascii-flow .hl-cyan  { color: var(--cyan); font-weight: 700; }
+    .ascii-flow .hl-green { color: var(--green); font-weight: 700; }
+    .ascii-flow .hl-muted { color: var(--muted); }
+
+    /* --- INTERACTIVE TERMINAL PREVIEW --- */
+    .term-grid {
+      display: grid;
+      grid-template-columns: 320px 1fr;
+      gap: 20px;
+    }
+    .mode-selector {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .mode-btn {
+      text-align: left;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      padding: 16px;
+      color: var(--text);
+      font-family: var(--mono);
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .mode-btn.active {
+      border-color: var(--amber);
+      background: rgba(245, 158, 11, 0.06);
+    }
+    .mode-btn .m-id {
+      font-size: 11px;
+      color: var(--amber);
+      display: block;
+      margin-bottom: 4px;
+    }
+    .mode-btn .m-title {
+      font-weight: 700;
+      font-size: 14px;
+      display: block;
+      margin-bottom: 4px;
+    }
+    .mode-btn .m-desc {
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    .terminal-window {
+      background: #050608;
+      border: 1px solid var(--border-hi);
+      display: flex;
+      flex-direction: column;
+    }
+    .term-header {
+      background: var(--bg-panel);
+      border-bottom: 1px solid var(--border);
+      padding: 10px 16px;
+      display: flex;
+      justify-content: space-between;
+      font-size: 11px;
+      color: var(--muted);
+    }
+    .term-body {
+      padding: 20px;
+      font-size: 12.5px;
+      line-height: 1.65;
+      white-space: pre-wrap;
+      min-height: 290px;
+    }
+    .cmd-line { color: var(--amber); }
+    .comment  { color: var(--dim); }
+    .json-key { color: var(--cyan); }
+    .json-val { color: var(--green); }
+
+    /* --- ROADMAP / LAB STATE --- */
+    .two-col {
+      display: grid;
+      grid-template-columns: 1.2fr 1fr;
+      gap: 28px;
+    }
+    .tree-list {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      padding: 24px;
+    }
+    .tree-item {
+      padding: 10px 0;
+      border-bottom: 1px dashed var(--border);
+      font-size: 13px;
+    }
+    .tree-item:last-child { border-bottom: none; }
+    .tree-branch { color: var(--amber); margin-right: 6px; }
+    .tree-meta {
+      font-size: 11px;
+      color: var(--muted);
+      margin-left: 24px;
+      display: block;
+    }
+
+    .state-panel {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .kv-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      margin: 18px 0;
+    }
+    .kv-box {
+      border: 1px solid var(--border);
+      background: var(--bg-panel);
+      padding: 12px;
+    }
+    .kv-box .k { font-size: 10px; color: var(--muted); text-transform: uppercase; }
+    .kv-box .v { font-size: 15px; font-weight: 700; color: var(--text); margin-top: 2px; }
+
+    footer {
+      padding: 40px 0;
+      font-size: 12px;
+      color: var(--muted);
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+
+    @media (max-width: 900px) {
+      .tri-grid, .term-grid, .two-col { grid-template-columns: 1fr; }
+      .telemetry { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- TOP TELEMETRY BAR -->
+  <header class="topbar">
+    <div class="container topbar-inner">
+      <div class="brand">
+        <span class="brand-prompt">~/jlfm</span>
+        <span>jLFM // SPEC_01</span>
+      </div>
+      <div class="telemetry">
+        <span><i class="dot-online"></i>[ STATUS ]: <b>PRE-LAUNCH</b></span>
+        <span>[ ARCH ]: <b>JEPA · CfC · LNN</b></span>
+        <span>[ FOOTPRINT ]: <b>&lt;200M / &lt;50M / RTL</b></span>
+      </div>
+      <nav class="nav-links">
+        <a href="index.html">Home</a>
+        <a href="blog.html">Blog</a>
+        <a href="#models">Models</a>
+        <a href="#topology">Topology</a>
+        <a href="#inspect">Inspect</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container">
+    <!-- HERO -->
+    <section class="hero">
+      <div class="shell-crumb">
+        <span>./init_foundation.sh</span>
+        <span class="path">--family jLFM --mode sovereign</span>
+      </div>
+      <h1>
+        Stop Predicting Tokens.<br />
+        <span class="accent">Navigate Latent Space.</span>
+      </h1>
+      <p class="hero-sub">
+        <b>jLFM (JEPA Liquid Foundation Model)</b> is a compact, local-first model family that replaces brute-force token autoregression with Joint-Embedding Predictive world modeling and continuous-time Liquid Neural Networks. Built to generate, decide, and execute from consumer GPUs down to bare-metal FPGAs.
+      </p>
+      <figure class="hero-visual">
+        <img src="jlfm-eye.jpg" alt="jLFM — amber halftone eye banner" />
+        <figcaption><span>FIG_00 // LATENT_OBSERVER</span><b>● REC</b></figcaption>
+      </figure>
+      <div class="tag-row">
+        <span class="tag hi">Latent World Model</span>
+        <span class="tag">Closed-Form Continuous-Time (CfC)</span>
+        <span class="tag">Zero Cloud Rents</span>
+        <span class="tag">Sub-50M Decision Engine</span>
+        <span class="tag">OSS FPGA Neural Engine</span>
+      </div>
+      <div class="cta-row">
+        <a href="#models" class="btn btn-primary">Explore The 3 Cores ↓</a>
+        <a href="#inspect" class="btn">[ Inspect CLI Preview ]</a>
+        <a href="mailto:ariyan.bose@proton.me" class="btn">Request Early Access ↗</a>
+      </div>
+    </section>
+
+    <!-- THE 3 PARTS: JLD / JLC / JL-FPGA -->
+    <section class="section" id="models">
+      <div class="section-head">
+        <div>
+          <div class="section-label">// 01 · MODEL LINEUP</div>
+          <h2 class="section-title">One Latent Core. Three Execution Targets.</h2>
+        </div>
+        <p class="section-note">
+          Every jLFM variant shares the same bidirectional semantic chunk encoder and continuous-time liquid state integrator—swapping only the readout head for generation, typed decisions, or silicon execution.
+        </p>
+      </div>
+
+      <div class="tri-grid">
+        <!-- PART 1: JLD -->
+        <article class="card">
+          <div>
+            <div class="card-top-bar">
+              <span>CORE_01 // GENERATIVE</span>
+              <span class="badge amber">Pre-Release</span>
+            </div>
+            <h3>JLD</h3>
+            <div class="subtitle">JEPA Liquid Decoder · Generative LM</div>
+            <p>
+              A hierarchical generative model that plans ahead in chunk-level latent space before decoding tokens locally. By predicting semantic trajectories first, JLD avoids flat token-by-token drift under a strict 200M parameter cap.
+            </p>
+            <ul class="feature-list">
+              <li>├─ <b>Latent Horizon Planning:</b> Predicts future semantic chunks via a stacked CfC liquid core before emitting prose.</li>
+              <li>├─ <b>32× Context Compression:</b> Compresses token windows into dense latent vectors with anti-collapse regularization.</li>
+              <li>└─ <b>Local-First Footprint:</b> Runs effortlessly on edge GPUs, Apple Silicon, and homelab nodes.</li>
+            </ul>
+          </div>
+          <div class="metrics-strip">
+            <div class="metric-cell">
+              <span class="val">&lt;200M</span>
+              <span class="lbl">Param Cap</span>
+            </div>
+            <div class="metric-cell">
+              <span class="val">JEPA+AR</span>
+              <span class="lbl">Hybrid Core</span>
+            </div>
+            <div class="metric-cell">
+              <span class="val">Stream</span>
+              <span class="lbl">Output</span>
+            </div>
+          </div>
+        </article>
+
+        <!-- PART 2: JLC -->
+        <article class="card">
+          <div>
+            <div class="card-top-bar">
+              <span>CORE_02 // DISCRIMINATIVE</span>
+              <span class="badge cyan">System-1 Engine</span>
+            </div>
+            <h3>JLC</h3>
+            <div class="subtitle">JEPA Liquid Choice · Typed Decision Model</div>
+            <p>
+              Our sovereign, self-hostable answer to TypeSafe’s Jev. State goes in; calibrated typed decisions come out in a single forward pass. No prose generation, no chain-of-thought tax, and 0% off-schema hallucination.
+            </p>
+            <ul class="feature-list">
+              <li>├─ <b>3 Native Primitives:</b> Evaluate <b>Noul</b> (binary probability), <b>Choice</b> (categorical), and <b>Score</b> (ordinal rubrics) in parallel.</li>
+              <li>├─ <b>Calibrated by Design:</b> Trained with proper scoring rules (Brier + Ordinal RPS) so a 0.85 confidence means 85% empirical accuracy.</li>
+              <li>└─ <b>Zero Output Token Cost:</b> Score 20+ routing, guardrail, or RAG reranking questions in one pass.</li>
+            </ul>
+          </div>
+          <div class="metrics-strip">
+            <div class="metric-cell">
+              <span class="val">&lt;50M</span>
+              <span class="lbl">Param Cap</span>
+            </div>
+            <div class="metric-cell">
+              <span class="val">1-Pass</span>
+              <span class="lbl">Parallel Eval</span>
+            </div>
+            <div class="metric-cell">
+              <span class="val">Typed</span>
+              <span class="lbl">JSON Out</span>
+            </div>
+          </div>
+        </article>
+
+        <!-- PART 3: JL-FPGA -->
+        <article class="card">
+          <div>
+            <div class="card-top-bar">
+              <span>CORE_03 // HARDWARE + SDK</span>
+              <span class="badge green">Silicon Target</span>
+            </div>
+            <h3>JL-FPGA</h3>
+            <div class="subtitle">Hardware JLC + OSS Neural Engine SDK</div>
+            <p>
+              A general-purpose, quantized edition of JLC engineered for low-power FPGAs, bundled with an open-source Neural Engine SDK. Bring deterministic, microsecond-class System-1 decisions straight to the physical edge.
+            </p>
+            <ul class="feature-list">
+              <li>├─ <b>KV-Cache Free Recurrence:</b> Liquid CfC state integration keeps memory bandwidth flat and deterministic on BRAM/SRAM.</li>
+              <li>├─ <b>OSS Neural Engine SDK:</b> Open Verilog/SystemVerilog cores, compiler toolchain, and zero-dependency C/Rust host drivers.</li>
+              <li>└─ <b>Physical Edge Ready:</b> Built for robotics, industrial safety interlocks, SDR/network packet gating, and autonomous hardware.</li>
+            </ul>
+          </div>
+          <div class="metrics-strip">
+            <div class="metric-cell">
+              <span class="val">INT8/FP16</span>
+              <span class="lbl">Quantized</span>
+            </div>
+            <div class="metric-cell">
+              <span class="val">OSS SDK</span>
+              <span class="lbl">Rust / C / RTL</span>
+            </div>
+            <div class="metric-cell">
+              <span class="val">Deterministic</span>
+              <span class="lbl">Latency</span>
+            </div>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <!-- HIGH-LEVEL TOPOLOGY -->
+    <section class="section" id="topology">
+      <div class="section-head">
+        <div>
+          <div class="section-label">// 02 · THE TOPOLOGY</div>
+          <h2 class="section-title">How the jLFM Pipeline Operates</h2>
+        </div>
+        <p class="section-note">
+          No deep-dive equations—just the architectural separation of concerns that lets one backbone power text generation, typed classification, and FPGA acceleration.
+        </p>
+      </div>
+
+      <div class="topo-box">
+<div class="ascii-flow"><span class="hl-muted">// INPUT STREAM                     // SHARED WORLD MODEL                              // SPECIALIZED READOUT HEADS</span>
+
+                                   ┌──────────────────────────────────────┐          ┌─► <span class="hl-amber">[ JLD: CAUSAL CHUNK DECODER ]</span>
+┌─────────────────────────┐        │  <b>1. BIDIRECTIONAL CHUNK ENCODER</b>     │          │   Streams coherent text conditioned
+│  RAW CONTEXT / STATE    │ ─────► │  Compresses K-token windows into     │ ─────────┤   on predicted latent trajectories.
+│  Text · JSON · Telemetry│        │  normalized semantic latents (z_t).  │          │
+└─────────────────────────┘        └──────────────────┬───────────────────┘          ├─► <span class="hl-cyan">[ JLC: PARALLEL DECISION HEAD ]</span>
+                                                      │                              │   Single-pass cross-attention over
+                                                      ▼                              │   Noul · Choice · Score questions.
+                                   ┌──────────────────────────────────────┐          │
+                                   │  <b>2. LIQUID CfC STATE INTEGRATOR</b>     │ ─────────┴─► <span class="hl-green">[ JL-FPGA: OSS NEURAL ENGINE ]</span>
+                                   │  Continuous-time recurrent dynamics  │              Hardware-mapped state core +
+                                   │  track global state &amp; predict z_t+1. │              deterministic decision bus over SPI/PCIe.
+                                   └──────────────────────────────────────┘</div>
+      </div>
+    </section>
+
+    <!-- INTERACTIVE INSPECTOR -->
+    <section class="section" id="inspect">
+      <div class="section-head">
+        <div>
+          <div class="section-label">// 03 · SEE IT IN ACTION</div>
+          <h2 class="section-title">Switch Target Interfaces</h2>
+        </div>
+        <p class="section-note">
+          Preview how each jLFM target is invoked in practice—from Python CLI inference to embedded Rust SDK calls.
+        </p>
+      </div>
+
+      <div class="term-grid">
+        <div class="mode-selector">
+          <button class="mode-btn active" onclick="setMode('jlc', this)">
+            <span class="m-id">01 // JLC (DECISION ENGINE)</span>
+            <span class="m-title">State In, Typed Decisions Out</span>
+            <span class="m-desc">Evaluate Noul, Choice, and Score in a single 49M-param forward pass.</span>
+          </button>
+          <button class="mode-btn" onclick="setMode('jld', this)">
+            <span class="m-id">02 // JLD (GENERATIVE)</span>
+            <span class="m-title">Latent-Guided Generation</span>
+            <span class="m-desc">Roll out predicted chunk latents and decode text locally.</span>
+          </button>
+          <button class="mode-btn" onclick="setMode('fpga', this)">
+            <span class="m-id">03 // JL-FPGA (OSS NEURAL SDK)</span>
+            <span class="m-title">Bare-Metal Silicon Readout</span>
+            <span class="m-desc">Push state frames to the FPGA core and read calibrated decisions over DMA.</span>
+          </button>
+        </div>
+
+        <div class="terminal-window">
+          <div class="term-header">
+            <span id="term-title">zsh · jlfm-cli — jlc decide</span>
+            <span>LOCAL · ZERO-CLOUD</span>
+          </div>
+          <div class="term-body" id="term-content"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ROADMAP & SOVEREIGN LAB STATE -->
+    <section class="section">
+      <div class="two-col">
+        <div class="tree-list">
+          <div class="section-label">// 04 · RELEASE ROLLOUT</div>
+          <h3 style="font-family: var(--display); font-size: 22px; margin-bottom: 16px;">WHAT WE'RE SHIPPING</h3>
+          <div class="tree-item">
+            <span class="tree-branch">├─</span><b>PHASE 01 · JLC-50M Open Weights &amp; CLI</b>
+            <span class="tree-meta">Single-file PyTorch reference + calibrated Noul/Choice/Score evaluation suite.</span>
+          </div>
+          <div class="tree-item">
+            <span class="tree-branch">├─</span><b>PHASE 02 · JLD-200M Generative Checkpoint</b>
+            <span class="tree-meta">Pretrained latent-planning text model with open training &amp; ablation scripts.</span>
+          </div>
+          <div class="tree-item">
+            <span class="tree-branch">├─</span><b>PHASE 03 · JL-FPGA Bitstreams &amp; OSS Neural Engine SDK</b>
+            <span class="tree-meta">Synthesizable Verilog cores for edge FPGAs (Gowin Tang / Xilinx) + Rust host crate.</span>
+          </div>
+          <div class="tree-item">
+            <span class="tree-branch">└─</span><b>PHASE 04 · Technical Report &amp; Calibration Benchmarks</b>
+            <span class="tree-meta">Full architectural breakdown, ECE calibration curves, and latency benchmarks.</span>
+          </div>
+        </div>
+
+        <div class="state-panel">
+          <div>
+            <div class="section-label">// SOVEREIGN AI STATE</div>
+            <h3 style="font-family: var(--display); font-size: 22px; margin-bottom: 8px;">NO API TAX. YOUR SILICON.</h3>
+            <p style="color: var(--muted); font-size: 13px;">
+              You shouldn't need a 70B cloud model or a proprietary per-token API just to route an agent, verify a guardrail, or run local generation. jLFM is engineered to be owned end-to-end.
+            </p>
+            <div class="kv-grid">
+              <div class="kv-box">
+                <div class="k">Custody</div>
+                <div class="v">Self-Hosted</div>
+              </div>
+              <div class="kv-box">
+                <div class="k">Cloud Rents</div>
+                <div class="v">$0.00</div>
+              </div>
+              <div class="kv-box">
+                <div class="k">JLC Size</div>
+                <div class="v">49.3M Params</div>
+              </div>
+              <div class="kv-box">
+                <div class="k">Hardware SDK</div>
+                <div class="v">Open Source</div>
+              </div>
+            </div>
+          </div>
+          <a href="contact.html" class="btn" style="justify-content: center; width: 100%;">
+            Get_In_Touch →
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <footer>
+      <div>jLFM // JEPA Liquid Foundation Model · Built by Ariyan Basu · <a href="index.html" style="text-decoration:underline;">← back to ariyanbasu.site</a></div>
+      <div>Local-first · sovereign · open.</div>
+    </footer>
+  </main>
+
+  <script>
+    const snippets = {
+      jlc: `<span class="comment"># Evaluate 3 typed questions (Noul, Choice, Score) in a single forward pass</span>
+<span class="cmd-line">$ python jlc.py decide --model jlc-50m --state_file incident_402.json</span>
+
+<span class="comment">// OUTPUT (1 forward pass · 49.27M params · 0 tokens generated)</span>
+{
+  <span class="json-key">"q0_noul_escalate"</span>: {
+    <span class="json-key">"type"</span>: <span class="json-val">"noul"</span>,
+    <span class="json-key">"prob"</span>: <span class="json-val">0.914</span>,
+    <span class="json-key">"confidence"</span>: <span class="json-val">0.828</span>
+  },
+  <span class="json-key">"q1_choice_route"</span>: {
+    <span class="json-key">"type"</span>: <span class="json-val">"choice"</span>,
+    <span class="json-key">"choice"</span>: <span class="json-val">2</span>,
+    <span class="json-key">"probs"</span>: [<span class="json-val">0.03, 0.08, 0.86, 0.03</span>],
+    <span class="json-key">"confidence"</span>: <span class="json-val">0.741</span>
+  },
+  <span class="json-key">"q2_score_severity"</span>: {
+    <span class="json-key">"type"</span>: <span class="json-val">"score"</span>,
+    <span class="json-key">"score"</span>: <span class="json-val">3.42</span>,
+    <span class="json-key">"aad"</span>: <span class="json-val">0.21</span>,
+    <span class="json-key">"confidence"</span>: <span class="json-val">0.895</span>
+  }
+}`,
+      jld: `<span class="comment"># Generate text by predicting chunk-level latent trajectories via CfC</span>
+<span class="cmd-line">$ python jld.py sample --model jld-200m --n_chunks 8 --top_p 0.9</span>
+
+<span class="comment">// LATENT ROLLOUT: z_0 ──► zh_1 ──► zh_2 (eff_rank: 312.4 · collapse_alert: false)</span>
+<span class="json-key">[chunk_01]</span> The node came back online after the relay handshake settled...
+<span class="json-key">[chunk_02]</span> Latency dropped to 14ms once the direct QUIC path locked in...
+<span class="json-key">[chunk_03]</span> All six peer monitors verified the signed state log without error.`,
+      fpga: `<span class="comment">// Rust Host SDK: Offload JLC state + option descriptors to JL-FPGA core</span>
+<span class="cmd-line">use jl_fpga_sdk::{NeuralEngine, Question, QType};</span>
+
+let mut engine = NeuralEngine::open(<span class="json-val">"/dev/jl_fpga0"</span>)?;
+engine.push_state_chunks(&amp;tokenized_state)?;
+
+let decisions = engine.decide_parallel(&amp;[
+    Question::noul(<span class="json-val">"thermal_trip"</span>, &amp;opt_false, &amp;opt_true),
+    Question::choice(<span class="json-val">"actuator_mode"</span>, &amp;mode_options),
+    Question::score(<span class="json-val">"anomaly_level"</span>, &amp;rubric_5_levels),
+])?; <span class="comment">// Deterministic hardware readout · zero OS jitter</span>`
+    };
+
+    const titles = {
+      jlc: "zsh · jlfm-cli — jlc decide",
+      jld: "zsh · jlfm-cli — jld sample",
+      fpga: "rust · jl-fpga-sdk — hardware neural engine"
+    };
+
+    function setMode(mode, btn) {
+      document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById('term-title').textContent = titles[mode];
+      document.getElementById('term-content').innerHTML = snippets[mode];
+    }
+
+    // Initialize default tab
+    document.getElementById('term-content').innerHTML = snippets.jlc;
+  </script>
+</body>
+</html>
